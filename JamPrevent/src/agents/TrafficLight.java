@@ -20,16 +20,19 @@ import jade.lang.acl.MessageTemplate;
  */
 public class TrafficLight extends Agent{
     private String location;
+    private String state;
 
     @Override
     public void setup() {
         
         Object[] arguments = getArguments();
+        state = "red";
         
         if(arguments.length > 0){
             location = arguments[0].toString();
         }
         addBehaviour(new TellLocationBehaviour());
+        addBehaviour(new ReceiveAndSetStateBehaviour());
         registerAgent();
     }
     
@@ -59,6 +62,27 @@ public class TrafficLight extends Agent{
 			}
 		}
 	}
+    
+        private class ReceiveAndSetStateBehaviour extends CyclicBehaviour {
+		private static final long serialVersionUID = -5018397038252983135L;
+
+		public void action() {
+			MessageTemplate tmp = MessageTemplate
+					.MatchPerformative(ACLMessage.PROPOSE);
+			ACLMessage m = receive(tmp);
+
+			if (m != null) {
+				String message = m.getContent();
+
+				if (message.equals("setState")) {
+                                    System.out.println("setting state");
+                                    setState(m.getUserDefinedParameter("state"));                                
+				} else {
+                                    System.out.println("not understood");
+				}
+			}
+		}
+	}
         
     private void registerAgent() {
         DFAgentDescription dfd = new DFAgentDescription();
@@ -77,9 +101,10 @@ public class TrafficLight extends Agent{
         }
     }
 
-    /**
-     * @return the location
-     */
+    public void setState(String state){
+        this.state = state;
+    }
+    
     public String getLocation() {
         return location;
     }
