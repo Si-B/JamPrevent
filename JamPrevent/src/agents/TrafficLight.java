@@ -20,6 +20,7 @@ import jade.lang.acl.MessageTemplate;
  */
 public class TrafficLight extends Agent{
     private String location;
+    private String direction;
     private String state;
 
     @Override
@@ -30,6 +31,7 @@ public class TrafficLight extends Agent{
         
         if(arguments.length > 0){
             location = arguments[0].toString();
+            direction = arguments[1].toString();
         }
         addBehaviour(new TellLocationBehaviour());
         addBehaviour(new ReceiveAndSetStateBehaviour());
@@ -48,11 +50,12 @@ public class TrafficLight extends Agent{
 				ACLMessage reply = m.createReply();
 				String message = m.getContent();
 
-				if (message.equals("getLocation")) {
+				if (message.equals("getLocationAndDirection")) {
                                     System.out.println("SENDING LOCATION");
-                                    reply.setContent("getLocation");
+                                    reply.setContent("getLocationAndDirection");
                                     reply.setPerformative(ACLMessage.INFORM);
                                     reply.addUserDefinedParameter("location", getLocation());                                    
+                                    reply.addUserDefinedParameter("direction", getDirection());   
 				} else {
 					System.out.println("not understood");
 					reply.setPerformative(ACLMessage.NOT_UNDERSTOOD);
@@ -61,6 +64,8 @@ public class TrafficLight extends Agent{
 				this.myAgent.send(reply);
 			}
 		}
+
+
 	}
     
         private class ReceiveAndSetStateBehaviour extends CyclicBehaviour {
@@ -103,10 +108,15 @@ public class TrafficLight extends Agent{
 
     public void setState(String state){
         this.state = state;
+        System.out.println(this.getLocalName() + " new state is: " + state);
     }
     
     public String getLocation() {
         return location;
+    }
+    
+    private String getDirection() {
+        return direction;
     }
     
 }

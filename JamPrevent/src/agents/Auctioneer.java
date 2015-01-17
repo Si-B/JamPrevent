@@ -58,7 +58,7 @@ public class Auctioneer extends Agent {
                     trafficLightAgents.stream().forEach((agent) -> {
                         trafficLightsMetadata.put(agent, new HashMap<String, String>());
                         System.out.println("Found Trafficlight: " + agent.getLocalName());
-                        AskTrafficLightForPosition(agent);
+                        AskTrafficLightForLocationAndDirection(agent);
                     });
                 }
             });
@@ -68,8 +68,8 @@ public class Auctioneer extends Agent {
                 public boolean done() {                    
                     for(AID agent : trafficLightAgents){                        
                         if(trafficLightsMetadata.containsKey(agent)){
-                            if(trafficLightsMetadata.get(agent).containsKey("location")){                                                    
-                                if(trafficLightsMetadata.get(agent).get("location").isEmpty()){
+                            if(trafficLightsMetadata.get(agent).containsKey("location") && trafficLightsMetadata.get(agent).containsKey("direction")){                                                    
+                                if(trafficLightsMetadata.get(agent).get("location").isEmpty() && trafficLightsMetadata.get(agent).get("direction").isEmpty()){
                                     return false;
                                 }
                             }else{
@@ -91,12 +91,13 @@ public class Auctioneer extends Agent {
                     if (msg != null) {
                         System.out.println(msg.getSender().getLocalName() + " sent to " + myAgent.getLocalName() + " -> " + msg.getContent());
 
-                        if (msg.getContent().equalsIgnoreCase("getLocation")) {
+                        if (msg.getContent().equalsIgnoreCase("getLocationAndDirection")) {
                             if (msg.getAllUserDefinedParameters().size() > 0) {
                                 if (trafficLightsMetadata.containsKey(msg.getSender())) {
-                                    trafficLightsMetadata.get(msg.getSender()).put("location", msg.getAllUserDefinedParameters().getProperty("location"));
+                                    trafficLightsMetadata.get(msg.getSender()).put("location", msg.getUserDefinedParameter("location"));
+                                    trafficLightsMetadata.get(msg.getSender()).put("direction", msg.getUserDefinedParameter("direction"));
                                 }
-                                System.out.println(msg.getAllUserDefinedParameters().getProperty("location"));
+                                System.out.println(msg.getUserDefinedParameter("location") + " " + msg.getUserDefinedParameter("direction"));
                             }
                         }
                     }
@@ -125,11 +126,11 @@ public class Auctioneer extends Agent {
             }
         }
 
-        private void AskTrafficLightForPosition(AID trafficLight) {
+        private void AskTrafficLightForLocationAndDirection(AID trafficLight) {
             jade.lang.acl.ACLMessage message = new jade.lang.acl.ACLMessage(
                     jade.lang.acl.ACLMessage.REQUEST);
             message.addReceiver(trafficLight);
-            message.setContent("getLocation");
+            message.setContent("getLocationAndDirection");
             this.myAgent.send(message);
         }
 
@@ -146,6 +147,8 @@ public class Auctioneer extends Agent {
             @Override
             public void action() {
                 for (AID trafficLight : trafficLightAgents) {
+                    
+                    
                     SendTrafficLightNewState(trafficLight, "green");
                 }
             }
