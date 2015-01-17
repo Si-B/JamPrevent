@@ -11,6 +11,7 @@ import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.SequentialBehaviour;
 import jade.core.behaviours.SimpleBehaviour;
+import jade.core.behaviours.TickerBehaviour;
 import jade.core.behaviours.WakerBehaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
@@ -32,7 +33,8 @@ public class Auctioneer extends Agent {
 
     private final List<AID> trafficLightAgents = new ArrayList<>();
     private HashMap<AID, HashMap<String, String>> trafficLightsMetadata = new HashMap<>(); 
-
+    private String lastDirection = "WE";
+            
     @Override
     public void setup() {
         addBehaviour(new DefaultExecutionBehaviour());
@@ -140,16 +142,48 @@ public class Auctioneer extends Agent {
 
         public DefaultExecutionBehaviour() {
             addSubBehaviour(new FindTrafficLightsAndGetMetaDataBehaviour());
-            addSubBehaviour(new SetStateBehaviour());
+            addSubBehaviour(new SetStateBehaviour(this.myAgent, 1000));
         }
         
-        private class SetStateBehaviour extends CyclicBehaviour{
+        private class SetStateBehaviour extends TickerBehaviour{
+
+            public SetStateBehaviour(Agent a, long period) {
+                super(a, period);
+            }
             @Override
-            public void action() {
+            public void onTick() {
                 for (AID trafficLight : trafficLightAgents) {
+                    if(lastDirection.equalsIgnoreCase("SE"))
+                    {
+                        if(trafficLightsMetadata.get(trafficLight).get("location").equalsIgnoreCase("W") && trafficLightsMetadata.get(trafficLight).get("direction").equalsIgnoreCase("E")){
+                            SendTrafficLightNewState(trafficLight, "green");
+                        }
+
+                        if(trafficLightsMetadata.get(trafficLight).get("location").equalsIgnoreCase("E") && trafficLightsMetadata.get(trafficLight).get("direction").equalsIgnoreCase("W")){
+                            SendTrafficLightNewState(trafficLight, "green");
+                        }
+
+                        if(trafficLightsMetadata.get(trafficLight).get("location").equalsIgnoreCase("S") && trafficLightsMetadata.get(trafficLight).get("direction").equalsIgnoreCase("E")){
+                            SendTrafficLightNewState(trafficLight, "red");
+                        }
+                        
+                        lastDirection = "WE";
+                    }else{
+                        if(trafficLightsMetadata.get(trafficLight).get("location").equalsIgnoreCase("W") && trafficLightsMetadata.get(trafficLight).get("direction").equalsIgnoreCase("E")){
+                            SendTrafficLightNewState(trafficLight, "red");
+                        }
+
+                        if(trafficLightsMetadata.get(trafficLight).get("location").equalsIgnoreCase("E") && trafficLightsMetadata.get(trafficLight).get("direction").equalsIgnoreCase("W")){
+                            SendTrafficLightNewState(trafficLight, "red");
+                        }
+
+                        if(trafficLightsMetadata.get(trafficLight).get("location").equalsIgnoreCase("S") && trafficLightsMetadata.get(trafficLight).get("direction").equalsIgnoreCase("E")){
+                            SendTrafficLightNewState(trafficLight, "green");
+                        }                    
+                        
+                        lastDirection = "SE";
+                    }
                     
-                    
-                    SendTrafficLightNewState(trafficLight, "green");
                 }
             }
         }

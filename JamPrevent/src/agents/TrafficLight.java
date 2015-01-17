@@ -7,6 +7,7 @@ package agents;
 
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
+import jade.core.behaviours.TickerBehaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
@@ -35,6 +36,8 @@ public class TrafficLight extends Agent{
         }
         addBehaviour(new TellLocationBehaviour());
         addBehaviour(new ReceiveAndSetStateBehaviour());
+      //  addBehaviour(new DumpPropertiesBehaviour(this, 1000));
+
         registerAgent();
     }
     
@@ -56,10 +59,56 @@ public class TrafficLight extends Agent{
                                     reply.setPerformative(ACLMessage.INFORM);
                                     reply.addUserDefinedParameter("location", getLocation());                                    
                                     reply.addUserDefinedParameter("direction", getDirection());   
-				} else {
+				}
+                                else if (message.equals("dumpProperties")) {
+                                   // System.out.println("DUMPING");
+                                    reply.setContent("dumpProperties");
+                                    reply.setPerformative(ACLMessage.INFORM);
+                                    reply.addUserDefinedParameter("location", getLocation());                                    
+                                    reply.addUserDefinedParameter("direction", getDirection());
+                                    reply.addUserDefinedParameter("state", getTrafficState());   
+                                    reply.addUserDefinedParameter("index", m.getUserDefinedParameter("index"));   
+
+
+				}
+                                
+                                
+                                /* else {
 					System.out.println("not understood");
 					reply.setPerformative(ACLMessage.NOT_UNDERSTOOD);
 					// Reply with not-understood
+				}*/
+				this.myAgent.send(reply);
+			}
+		}
+
+
+	}
+    
+        private class DumpPropertiesBehaviour extends TickerBehaviour {
+		private static final long serialVersionUID = -2018397038252984135L;
+
+        public DumpPropertiesBehaviour(Agent a, long period) {
+            super(a, period);
+        }
+
+		public void onTick() {
+			MessageTemplate tmp = MessageTemplate
+					.MatchPerformative(ACLMessage.REQUEST);
+			ACLMessage m = receive(tmp);
+
+			if (m != null) {
+				ACLMessage reply = m.createReply();
+				String message = m.getContent();
+
+				if (message.equals("dumpProperties")) {
+                                    System.out.println("DUMPING");
+                                    reply.setContent("dumpProperties");
+                                    reply.setPerformative(ACLMessage.INFORM);
+                                    reply.addUserDefinedParameter("location", getLocation());                                    
+                                    reply.addUserDefinedParameter("direction", getDirection());   
+                                    reply.addUserDefinedParameter("state", getTrafficState());   
+
 				}
 				this.myAgent.send(reply);
 			}
@@ -67,6 +116,8 @@ public class TrafficLight extends Agent{
 
 
 	}
+    
+    
     
         private class ReceiveAndSetStateBehaviour extends CyclicBehaviour {
 		private static final long serialVersionUID = -5018397038252983135L;
@@ -82,9 +133,9 @@ public class TrafficLight extends Agent{
 				if (message.equals("setState")) {
                                     System.out.println("setting state");
                                     setState(m.getUserDefinedParameter("state"));                                
-				} else {
+				}/* else {
                                     System.out.println("not understood");
-				}
+				}*/
 			}
 		}
 	}
@@ -113,6 +164,10 @@ public class TrafficLight extends Agent{
     
     public String getLocation() {
         return location;
+    }
+    
+    public String getTrafficState() {
+        return state;
     }
     
     private String getDirection() {
