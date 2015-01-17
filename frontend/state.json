@@ -1,0 +1,14 @@
+[
+{"location": "e",
+ "direction": "w",
+ "state": "red"
+ },
+{"location": "w",
+ "direction": "e",
+ "state": "red"
+ },
+{"location": "s",
+ "direction": "e",
+ "state": "green"
+ }
+]
