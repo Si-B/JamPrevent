@@ -7,8 +7,6 @@ package agents;
 
 import jade.core.AID;
 import jade.core.Agent;
-import jade.core.behaviours.Behaviour;
-import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.SequentialBehaviour;
 import jade.core.behaviours.SimpleBehaviour;
 import jade.core.behaviours.TickerBehaviour;
@@ -20,9 +18,7 @@ import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import java.util.ArrayList;
-import java.util.Dictionary;
 import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.List;
 
 /**
@@ -32,23 +28,14 @@ import java.util.List;
 public class Auctioneer extends Agent {
 
     private final List<AID> trafficLightAgents = new ArrayList<>();
-    private HashMap<AID, HashMap<String, String>> trafficLightsMetadata = new HashMap<>(); 
+    private final HashMap<AID, HashMap<String, String>> trafficLightsMetadata = new HashMap<>();
     private String lastDirection = "WE";
-            
+
     @Override
     public void setup() {
         addBehaviour(new DefaultExecutionBehaviour());
     }
 
-    private void SendTrafficLightNewState(AID trafficLight, String state) {
-        jade.lang.acl.ACLMessage message = new jade.lang.acl.ACLMessage(
-                jade.lang.acl.ACLMessage.PROPOSE);
-        message.addReceiver(trafficLight);
-        message.addUserDefinedParameter("state", state);
-        message.setContent("setState");
-        this.send(message);
-    }
-    
     public class FindTrafficLightsAndGetMetaDataBehaviour extends SequentialBehaviour {
 
         public FindTrafficLightsAndGetMetaDataBehaviour() {
@@ -60,31 +47,31 @@ public class Auctioneer extends Agent {
                     trafficLightAgents.stream().forEach((agent) -> {
                         trafficLightsMetadata.put(agent, new HashMap<String, String>());
                         System.out.println("Found Trafficlight: " + agent.getLocalName());
-                        AskTrafficLightForLocationAndDirection(agent);
+                        askTrafficLightForLocationAndDirection(agent);
                     });
                 }
             });
             addSubBehaviour(new SimpleBehaviour(this.myAgent) {
 
                 @Override
-                public boolean done() {                    
-                    for(AID agent : trafficLightAgents){                        
-                        if(trafficLightsMetadata.containsKey(agent)){
-                            if(trafficLightsMetadata.get(agent).containsKey("location") && trafficLightsMetadata.get(agent).containsKey("direction")){                                                    
-                                if(trafficLightsMetadata.get(agent).get("location").isEmpty() && trafficLightsMetadata.get(agent).get("direction").isEmpty()){
+                public boolean done() {
+                    for (AID agent : trafficLightAgents) {
+                        if (trafficLightsMetadata.containsKey(agent)) {
+                            if (trafficLightsMetadata.get(agent).containsKey("location") && trafficLightsMetadata.get(agent).containsKey("direction")) {
+                                if (trafficLightsMetadata.get(agent).get("location").isEmpty() && trafficLightsMetadata.get(agent).get("direction").isEmpty()) {
                                     return false;
                                 }
-                            }else{
+                            } else {
                                 return false;
                             }
-                        }else{
+                        } else {
                             return false;
                         }
-                    }                   
-                    
+                    }
+
                     return true;
                 }
-                                                
+
                 @Override
                 public void action() {
                     MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.INFORM);
@@ -128,7 +115,7 @@ public class Auctioneer extends Agent {
             }
         }
 
-        private void AskTrafficLightForLocationAndDirection(AID trafficLight) {
+        private void askTrafficLightForLocationAndDirection(AID trafficLight) {
             jade.lang.acl.ACLMessage message = new jade.lang.acl.ACLMessage(
                     jade.lang.acl.ACLMessage.REQUEST);
             message.addReceiver(trafficLight);
@@ -137,57 +124,69 @@ public class Auctioneer extends Agent {
         }
 
     }
-    
-    public class DefaultExecutionBehaviour extends SequentialBehaviour{
+
+    public class DefaultExecutionBehaviour extends SequentialBehaviour {
 
         public DefaultExecutionBehaviour() {
             addSubBehaviour(new FindTrafficLightsAndGetMetaDataBehaviour());
-            addSubBehaviour(new SetStateBehaviour(this.myAgent, 1000));
+            addSubBehaviour(new SetStateBehaviour(this.myAgent, 1500));
         }
-        
-        private class SetStateBehaviour extends TickerBehaviour{
+
+        private class SetStateBehaviour extends TickerBehaviour {
+            private String activeDirection = "SE";
 
             public SetStateBehaviour(Agent a, long period) {
                 super(a, period);
             }
+
             @Override
             public void onTick() {
                 for (AID trafficLight : trafficLightAgents) {
-                    if(lastDirection.equalsIgnoreCase("SE"))
-                    {
-                        if(trafficLightsMetadata.get(trafficLight).get("location").equalsIgnoreCase("W") && trafficLightsMetadata.get(trafficLight).get("direction").equalsIgnoreCase("E")){
+                    if (activeDirection.equalsIgnoreCase("SE")) {
+                        if (trafficLightsMetadata.get(trafficLight).get("location").equalsIgnoreCase("W") && trafficLightsMetadata.get(trafficLight).get("direction").equalsIgnoreCase("E")) {
                             SendTrafficLightNewState(trafficLight, "green");
                         }
 
-                        if(trafficLightsMetadata.get(trafficLight).get("location").equalsIgnoreCase("E") && trafficLightsMetadata.get(trafficLight).get("direction").equalsIgnoreCase("W")){
+                        if (trafficLightsMetadata.get(trafficLight).get("location").equalsIgnoreCase("E") && trafficLightsMetadata.get(trafficLight).get("direction").equalsIgnoreCase("W")) {
                             SendTrafficLightNewState(trafficLight, "green");
                         }
 
-                        if(trafficLightsMetadata.get(trafficLight).get("location").equalsIgnoreCase("S") && trafficLightsMetadata.get(trafficLight).get("direction").equalsIgnoreCase("E")){
+                        if (trafficLightsMetadata.get(trafficLight).get("location").equalsIgnoreCase("S") && trafficLightsMetadata.get(trafficLight).get("direction").equalsIgnoreCase("E")) {
                             SendTrafficLightNewState(trafficLight, "red");
                         }
-                        
+
                         lastDirection = "WE";
-                    }else{
-                        if(trafficLightsMetadata.get(trafficLight).get("location").equalsIgnoreCase("W") && trafficLightsMetadata.get(trafficLight).get("direction").equalsIgnoreCase("E")){
+                    } else {
+                        if (trafficLightsMetadata.get(trafficLight).get("location").equalsIgnoreCase("W") && trafficLightsMetadata.get(trafficLight).get("direction").equalsIgnoreCase("E")) {
                             SendTrafficLightNewState(trafficLight, "red");
                         }
 
-                        if(trafficLightsMetadata.get(trafficLight).get("location").equalsIgnoreCase("E") && trafficLightsMetadata.get(trafficLight).get("direction").equalsIgnoreCase("W")){
+                        if (trafficLightsMetadata.get(trafficLight).get("location").equalsIgnoreCase("E") && trafficLightsMetadata.get(trafficLight).get("direction").equalsIgnoreCase("W")) {
                             SendTrafficLightNewState(trafficLight, "red");
                         }
 
-                        if(trafficLightsMetadata.get(trafficLight).get("location").equalsIgnoreCase("S") && trafficLightsMetadata.get(trafficLight).get("direction").equalsIgnoreCase("E")){
+                        if (trafficLightsMetadata.get(trafficLight).get("location").equalsIgnoreCase("S") && trafficLightsMetadata.get(trafficLight).get("direction").equalsIgnoreCase("E")) {
                             SendTrafficLightNewState(trafficLight, "green");
-                        }                    
-                        
+                        }
+
                         lastDirection = "SE";
                     }
-                    
+
                 }
+                activeDirection = lastDirection;
             }
+
+            private void SendTrafficLightNewState(AID trafficLight, String state) {
+                jade.lang.acl.ACLMessage message = new jade.lang.acl.ACLMessage(
+                        jade.lang.acl.ACLMessage.PROPOSE);
+                message.addReceiver(trafficLight);
+                message.addUserDefinedParameter("state", state);
+                message.setContent("setState");
+                this.myAgent.send(message);
+            }
+
         }
-        
+
     }
 
 }

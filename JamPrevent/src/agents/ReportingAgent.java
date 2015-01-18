@@ -55,14 +55,14 @@ public class ReportingAgent extends Agent{
             }                        
         });
         
-        addBehaviour(new TickerBehaviour(this, 1000) {
+        addBehaviour(new TickerBehaviour(this, 600) {
 
             @Override
             public void onTick() {
                     RequestTrafficLightsToDumpProperties();
             }
         });
-        addBehaviour(new TickerBehaviour(this, 200) {
+        addBehaviour(new TickerBehaviour(this, 100) {
 
             @Override
             public void onTick() {
@@ -70,7 +70,7 @@ public class ReportingAgent extends Agent{
 
                     ACLMessage msg = receive(mt);
                     if (msg != null) {
-                        System.out.println(msg.getSender().getLocalName() + " sent to " + myAgent.getLocalName() + " -> " + msg.getContent());
+//                        System.out.println(msg.getSender().getLocalName() + " sent to " + myAgent.getLocalName() + " -> " + msg.getContent());
 
                         if (msg.getContent().equalsIgnoreCase("dumpProperties")) {
                             if (msg.getAllUserDefinedParameters().size() > 0) {
