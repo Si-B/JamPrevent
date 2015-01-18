@@ -7,7 +7,6 @@ package agents;
 
 import jade.core.AID;
 import jade.core.Agent;
-import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.TickerBehaviour;
 import jade.core.behaviours.WakerBehaviour;
 import jade.domain.DFService;
@@ -19,15 +18,9 @@ import jade.lang.acl.MessageTemplate;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.io.PrintWriter;
-import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -39,7 +32,6 @@ import java.util.logging.Logger;
 public class ReportingAgent extends Agent{
     private final List<AID> trafficLightAgents = new ArrayList<>();
     private int index = 0;
-    private PrintWriter printWriter;
     private String pathToDump;
     private File dumpFile;
     @Override
@@ -51,11 +43,6 @@ public class ReportingAgent extends Agent{
         if(arguments.length > 0){
             pathToDump = arguments[0].toString();
             dumpFile = new File(pathToDump + "\\state.json");
-            try {
-                printWriter = new PrintWriter(pathToDump + "\\state.json");
-            } catch (FileNotFoundException ex) {
-                Logger.getLogger(ReportingAgent.class.getName()).log(Level.SEVERE, null, ex);
-            }            
         }        
         
         
@@ -65,9 +52,7 @@ public class ReportingAgent extends Agent{
             protected void onWake() {
                 super.onWake(); //To change body of generated methods, choose Tools | Templates.
                 findAndAddTrafficLights();
-            }
-            
-            
+            }                        
         });
         
         addBehaviour(new TickerBehaviour(this, 1000) {
@@ -95,9 +80,9 @@ public class ReportingAgent extends Agent{
                                 }*/
                                 String output = "[\n{\"location\": \"" + msg.getUserDefinedParameter("location").toLowerCase() + "\",\n\"direction\": \"" + msg.getUserDefinedParameter("direction").toLowerCase() + "\",\n\"state\": \"" + msg.getUserDefinedParameter("state").toLowerCase() + "\"\n}\n]";                                
                                 try {
-                                    FileOutputStream file=new FileOutputStream(dumpFile);
-                                    file.write(output.getBytes());
-                                    file.close();
+                                    try (FileOutputStream file = new FileOutputStream(dumpFile)) {
+                                        file.write(output.getBytes());
+                                    }
                                 } catch (IOException ex) {
                                     Logger.getLogger(ReportingAgent.class.getName()).log(Level.SEVERE, null, ex);
                                 }
