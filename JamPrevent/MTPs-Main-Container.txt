@@ -1,1 +1,1 @@
-http://kekskiste:7778/acc
+http://SiB-PC:7778/acc
