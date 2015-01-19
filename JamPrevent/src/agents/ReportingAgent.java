@@ -51,26 +51,14 @@ public class ReportingAgent extends Agent {
         }
 
         //Find all known TrafficLights
-        addBehaviour(new WakerBehaviour(this, 1000) {
+        addBehaviour(new FindAndAddTrafficLightsBehaviour(this, 1000));
 
-            @Override
-            protected void onWake() {
-                super.onWake(); //To change body of generated methods, choose Tools | Templates.
-                findAndAddTrafficLights();
-            }
-        });
         //requesting known TrafficLights to dump their properies to me
-        addBehaviour(new TickerBehaviour(this, 100) {
+        addBehaviour(new RequestTrafficLightsToDumpPropertiesBehaviour(this, 100));
 
-            @Override
-            public void onTick() {
-                RequestTrafficLightsToDumpProperties();
-            }
-        });
-        
         //listening to messages of TrafficLights
         addBehaviour(new CyclicBehaviour(this) {
-                       
+
             @Override
             public void action() {
                 MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.INFORM);
@@ -115,35 +103,60 @@ public class ReportingAgent extends Agent {
         });
     }
 
-    private void findAndAddTrafficLights() {
-        DFAgentDescription template = new DFAgentDescription();
-        ServiceDescription sd = new ServiceDescription();
-        sd.setType("TrafficLight-Service");
-        template.addServices(sd);
+    private class FindAndAddTrafficLightsBehaviour extends WakerBehaviour {
 
-        try {
-            DFAgentDescription[] dfds = DFService.search(this, template);
+        public FindAndAddTrafficLightsBehaviour(Agent a, long timeout) {
+            super(a, timeout);
+        }
 
-            if (dfds.length > 0) {
-                for (DFAgentDescription trafficLightAgentDescription : dfds) {
-                    AID trafficLightAgent = trafficLightAgentDescription.getName();
-                    trafficLightAgents.add(trafficLightAgent);
+        @Override
+        protected void onWake() {
+            super.onWake(); //To change body of generated methods, choose Tools | Templates.
+            findAndAddTrafficLights();
+        }
+
+        private void findAndAddTrafficLights() {
+            DFAgentDescription template = new DFAgentDescription();
+            ServiceDescription sd = new ServiceDescription();
+            sd.setType("TrafficLight-Service");
+            template.addServices(sd);
+
+            try {
+                DFAgentDescription[] dfds = DFService.search(this.myAgent, template);
+
+                if (dfds.length > 0) {
+                    for (DFAgentDescription trafficLightAgentDescription : dfds) {
+                        AID trafficLightAgent = trafficLightAgentDescription.getName();
+                        trafficLightAgents.add(trafficLightAgent);
+                    }
                 }
+            } catch (FIPAException fe) {
+                fe.printStackTrace();
             }
-        } catch (FIPAException fe) {
-            fe.printStackTrace();
         }
     }
 
-    private void RequestTrafficLightsToDumpProperties() {
-        jade.lang.acl.ACLMessage message = new jade.lang.acl.ACLMessage(
-                jade.lang.acl.ACLMessage.REQUEST);
-        trafficLightAgents.stream().forEach((trafficLight) -> {
-            message.addReceiver(trafficLight);
-        });
-        message.addUserDefinedParameter("index", String.valueOf(requestIndex));
-        message.setContent("dumpProperties");
-        this.send(message);
-    }
+    private class RequestTrafficLightsToDumpPropertiesBehaviour extends TickerBehaviour {
 
+        public RequestTrafficLightsToDumpPropertiesBehaviour(Agent a, long period) {
+            super(a, period);
+        }
+
+        @Override
+        public void onTick() {
+            requestTrafficLightsToDumpProperties();
+        }
+
+        private void requestTrafficLightsToDumpProperties() {
+            jade.lang.acl.ACLMessage message = new jade.lang.acl.ACLMessage(
+                    jade.lang.acl.ACLMessage.REQUEST);
+            trafficLightAgents.stream().forEach((trafficLight) -> {
+                message.addReceiver(trafficLight);
+            });
+            message.addUserDefinedParameter("index", String.valueOf(requestIndex));
+            message.setContent("dumpProperties");
+            this.myAgent.send(message);
+        }
+    }
+    
 }

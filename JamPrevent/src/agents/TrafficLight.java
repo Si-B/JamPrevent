@@ -25,21 +25,20 @@ public class TrafficLight extends Agent {
 
     private String location;
     private String direction;
-    private String state;
+    private String trafficState;
 
     @Override
     public void setup() {
 
         Object[] arguments = getArguments();
-        state = "red";
+        trafficState = "red";
 
         if (arguments.length > 0) {
             location = arguments[0].toString();
             direction = arguments[1].toString();
         }
         addBehaviour(new TellLocationBehaviour());
-        addBehaviour(new ReceiveAndSetStateBehaviour());
-        //  addBehaviour(new DumpPropertiesBehaviour(this, 1000));
+        addBehaviour(new ReceiveAndSetStateBehaviour());        
 
         registerAgent();
     }
@@ -58,13 +57,11 @@ public class TrafficLight extends Agent {
                 String message = m.getContent();
 
                 if (message.equals("getLocationAndDirection")) {
-//                    System.out.println("SENDING LOCATION");
                     reply.setContent("getLocationAndDirection");
                     reply.setPerformative(ACLMessage.INFORM);
                     reply.addUserDefinedParameter("location", getLocation());
                     reply.addUserDefinedParameter("direction", getDirection());
                 } else if (message.equals("dumpProperties")) {
-                    // System.out.println("DUMPING");
                     reply.setContent("dumpProperties");
                     reply.setPerformative(ACLMessage.INFORM);
                     reply.addUserDefinedParameter("location", getLocation());
@@ -73,12 +70,7 @@ public class TrafficLight extends Agent {
                     reply.addUserDefinedParameter("index", m.getUserDefinedParameter("index"));
 
                 }
-
-                /* else {
-                 System.out.println("not understood");
-                 reply.setPerformative(ACLMessage.NOT_UNDERSTOOD);
-                 // Reply with not-understood
-                 }*/
+                
                 this.myAgent.send(reply);
             }
         }
@@ -89,6 +81,7 @@ public class TrafficLight extends Agent {
 
         private static final long serialVersionUID = -5018397038252983135L;
 
+        @Override
         public void action() {
             MessageTemplate tmp = MessageTemplate
                     .MatchPerformative(ACLMessage.PROPOSE);
@@ -96,19 +89,15 @@ public class TrafficLight extends Agent {
 
             if (m != null) {
                 String message = m.getContent();
-
                 if (message.equals("setState")) {
-//                    System.out.println("setting state");
-
                     Date nextUpdate = new Date(Long.parseLong(m.getUserDefinedParameter("nextUpdate")));
                     addBehaviour(new WakerBehaviour(myAgent, nextUpdate) {
 
                         @Override
                         protected void onWake() {
                             super.onWake(); //To change body of generated methods, choose Tools | Templates.
-                            setState(m.getUserDefinedParameter("state"));
+                            setTrafficState(m.getUserDefinedParameter("state"));
                         }
-
                     });
                 }
 
@@ -133,9 +122,8 @@ public class TrafficLight extends Agent {
         }
     }
 
-    public void setState(String state) {
-        this.state = state;
-//        System.out.println(this.getLocalName() + " new state is: " + state);
+    public void setTrafficState(String trafficState) {
+        this.trafficState = trafficState;
     }
 
     public String getLocation() {
@@ -143,7 +131,7 @@ public class TrafficLight extends Agent {
     }
 
     public String getTrafficState() {
-        return state;
+        return trafficState;
     }
 
     private String getDirection() {
