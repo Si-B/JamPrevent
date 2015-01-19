@@ -25,7 +25,8 @@ public class TrafficLight extends Agent {
 
     private String location;
     private String direction;
-    private String trafficState;
+	private String trafficState;
+    private int carCount;
 
     @Override
     public void setup() {
@@ -38,9 +39,34 @@ public class TrafficLight extends Agent {
             direction = arguments[1].toString();
         }
         addBehaviour(new TellLocationBehaviour());
-        addBehaviour(new ReceiveAndSetStateBehaviour());        
+	addBehaviour(new ReceiveAndSetStateBehaviour());        
+
+        addBehaviour(new AddCarsBehaviour());
+
+
+
 
         registerAgent();
+    }
+    
+    private class AddCarsBehaviour extends CyclicBehaviour {
+
+        @Override
+        public void action() {
+            MessageTemplate tmp = MessageTemplate
+                    .MatchPerformative(ACLMessage.INFORM);
+            ACLMessage m = receive(tmp);
+
+            if (m != null) {
+                //ACLMessage reply = m.createReply();
+                String message = m.getContent();
+
+                if (message.equals("registerAdditionalCars")) {
+                    addAddditionalCars(Integer.parseInt(m.getUserDefinedParameter("additionalCars")));
+                }
+            }
+        }
+        
     }
 
     private class TellLocationBehaviour extends CyclicBehaviour {
@@ -67,11 +93,11 @@ public class TrafficLight extends Agent {
                     reply.addUserDefinedParameter("location", getLocation());
                     reply.addUserDefinedParameter("direction", getDirection());
                     reply.addUserDefinedParameter("state", getTrafficState());
+                    reply.addUserDefinedParameter("carCount", getCarCount());
                     reply.addUserDefinedParameter("index", m.getUserDefinedParameter("index"));
-
                 }
                 
-                this.myAgent.send(reply);
+		this.myAgent.send(reply);
             }
         }
 
@@ -100,6 +126,7 @@ public class TrafficLight extends Agent {
                         }
                     });
                 }
+                
 
             }
         }
@@ -122,12 +149,25 @@ public class TrafficLight extends Agent {
         }
     }
 
-    public void setTrafficState(String trafficState) {
+	public void setTrafficState(String trafficState) {
         this.trafficState = trafficState;
-    }
+
+        if (trafficState.equalsIgnoreCase("green")){
+            this.carCount = this.carCount - 3 > 0? this.carCount -3 : 0;
+            
+        }
+	}
 
     public String getLocation() {
         return location;
+    }
+    
+    public String getCarCount(){
+        return String.valueOf(carCount);
+    }
+    
+    public void addAddditionalCars(int carCount){
+        this.carCount += carCount;
     }
 
     public String getTrafficState() {

@@ -47,7 +47,7 @@ public class ReportingAgent extends Agent {
 
         if (arguments.length > 0) {
             pathToDump = arguments[0].toString();
-            dumpFile = new File(pathToDump + "\\state.json");
+            dumpFile = new File(pathToDump, "state.json");
         }
 
         //Find all known TrafficLights
@@ -72,6 +72,7 @@ public class ReportingAgent extends Agent {
                                 currentTrafficLight.put("location", msg.getUserDefinedParameter("location").toLowerCase());
                                 currentTrafficLight.put("direction", msg.getUserDefinedParameter("direction").toLowerCase());
                                 currentTrafficLight.put("state", msg.getUserDefinedParameter("state").toLowerCase());
+                                currentTrafficLight.put("load", msg.getUserDefinedParameter("carCount"));
                                 trafficLightStates.add(currentTrafficLight);
                                 receivedAnswersPerIndex++;
                             }

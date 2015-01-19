@@ -13,5 +13,6 @@ function updatePage(){
 function updateImage(data){
   $.each(data, function(index, value){
     document.getElementById(value.location).style.fill = value.state;
+    document.getElementById(value.location + "-load").innerHTML = value.load;
   });
 }

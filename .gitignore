@@ -12,3 +12,5 @@
 hs_err_pid*
 /JamPrevent/nbproject/private/
 /JamPrevent/build/
+
+/frontend/state.json
