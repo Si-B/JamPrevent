@@ -42,7 +42,7 @@ public class ReportingAgent extends Agent{
         
         if(arguments.length > 0){
             pathToDump = arguments[0].toString();
-            dumpFile = new File(pathToDump + "\\state.json");
+            dumpFile = new File(pathToDump + "/state.json");
         }        
         
         
@@ -78,7 +78,10 @@ public class ReportingAgent extends Agent{
                                     trafficLightsMetadata.get(msg.getSender()).put("location", msg.getUserDefinedParameter("location"));
                                     trafficLightsMetadata.get(msg.getSender()).put("direction", msg.getUserDefinedParameter("direction"));
                                 }*/
-                                String output = "[\n{\"location\": \"" + msg.getUserDefinedParameter("location").toLowerCase() + "\",\n\"direction\": \"" + msg.getUserDefinedParameter("direction").toLowerCase() + "\",\n\"state\": \"" + msg.getUserDefinedParameter("state").toLowerCase() + "\"\n}\n]";                                
+                                String output = "[\n{\"location\": \"" + msg.getUserDefinedParameter("location").toLowerCase()
+                                             + "\",\n\"direction\": \"" + msg.getUserDefinedParameter("direction").toLowerCase()
+                                             + "\",\n\"load\": \"" + msg.getUserDefinedParameter("carCount").toLowerCase()
+                                             + "\",\n\"state\": \"" + msg.getUserDefinedParameter("state").toLowerCase() + "\"\n}\n]";                                
                                 try {
                                     try (FileOutputStream file = new FileOutputStream(dumpFile)) {
                                         file.write(output.getBytes());
