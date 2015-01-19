@@ -7,6 +7,7 @@ package agents;
 
 import jade.core.AID;
 import jade.core.Agent;
+import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.TickerBehaviour;
 import jade.core.behaviours.WakerBehaviour;
 import jade.domain.DFService;
@@ -49,6 +50,7 @@ public class ReportingAgent extends Agent {
             dumpFile = new File(pathToDump + "\\state.json");
         }
 
+        //Find all known TrafficLights
         addBehaviour(new WakerBehaviour(this, 1000) {
 
             @Override
@@ -57,18 +59,20 @@ public class ReportingAgent extends Agent {
                 findAndAddTrafficLights();
             }
         });
-
-        addBehaviour(new TickerBehaviour(this, 250) {
+        //requesting known TrafficLights to dump their properies to me
+        addBehaviour(new TickerBehaviour(this, 100) {
 
             @Override
             public void onTick() {
                 RequestTrafficLightsToDumpProperties();
             }
         });
-        addBehaviour(new TickerBehaviour(this, 50) {
-
+        
+        //listening to messages of TrafficLights
+        addBehaviour(new CyclicBehaviour(this) {
+                       
             @Override
-            public void onTick() {
+            public void action() {
                 MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.INFORM);
                 ACLMessage msg = receive(mt);
                 if (msg != null) {
@@ -107,6 +111,7 @@ public class ReportingAgent extends Agent {
                     }
                 }
             }
+
         });
     }
 
@@ -139,7 +144,6 @@ public class ReportingAgent extends Agent {
         message.addUserDefinedParameter("index", String.valueOf(requestIndex));
         message.setContent("dumpProperties");
         this.send(message);
-//            index++;
     }
 
 }
