@@ -8,12 +8,14 @@ package agents;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.TickerBehaviour;
+import jade.core.behaviours.WakerBehaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
+import java.util.Date;
 
 /**
  *
@@ -83,38 +85,6 @@ public class TrafficLight extends Agent {
 
     }
 
-    private class DumpPropertiesBehaviour extends TickerBehaviour {
-
-        private static final long serialVersionUID = -2018397038252984135L;
-
-        public DumpPropertiesBehaviour(Agent a, long period) {
-            super(a, period);
-        }
-
-        public void onTick() {
-            MessageTemplate tmp = MessageTemplate
-                    .MatchPerformative(ACLMessage.REQUEST);
-            ACLMessage m = receive(tmp);
-
-            if (m != null) {
-                ACLMessage reply = m.createReply();
-                String message = m.getContent();
-
-                if (message.equals("dumpProperties")) {
-//                    System.out.println("DUMPING");
-                    reply.setContent("dumpProperties");
-                    reply.setPerformative(ACLMessage.INFORM);
-                    reply.addUserDefinedParameter("location", getLocation());
-                    reply.addUserDefinedParameter("direction", getDirection());
-                    reply.addUserDefinedParameter("state", getTrafficState());
-
-                }
-                this.myAgent.send(reply);
-            }
-        }
-
-    }
-
     private class ReceiveAndSetStateBehaviour extends CyclicBehaviour {
 
         private static final long serialVersionUID = -5018397038252983135L;
@@ -129,10 +99,18 @@ public class TrafficLight extends Agent {
 
                 if (message.equals("setState")) {
 //                    System.out.println("setting state");
-                    setState(m.getUserDefinedParameter("state"));
-                }/* else {
-                 System.out.println("not understood");
-                 }*/
+                        
+                    Date nextUpdate = new Date(Long.parseLong(m.getUserDefinedParameter("nextUpdate")));
+                    addBehaviour(new WakerBehaviour(myAgent, nextUpdate) {
+
+                        @Override
+                        protected void onWake() {
+                            super.onWake(); //To change body of generated methods, choose Tools | Templates.
+                            setState(m.getUserDefinedParameter("state"));
+                        }
+                                            
+                    });
+                }
 
             }
         }
