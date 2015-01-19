@@ -131,10 +131,11 @@ public class Auctioneer extends Agent {
 
         public DefaultExecutionBehaviour() {
             addSubBehaviour(new FindTrafficLightsAndGetMetaDataBehaviour());
-            addSubBehaviour(new SetStateBehaviour(this.myAgent, 2500));
+            addSubBehaviour(new SetStateBehaviour(this.myAgent, 1000));
         }
 
         private class SetStateBehaviour extends TickerBehaviour {
+
             private String activeDirection = "SE";
 
             public SetStateBehaviour(Agent a, long period) {
@@ -144,12 +145,12 @@ public class Auctioneer extends Agent {
             @Override
             public void onTick() {
 
-                long t=new Date().getTime();
+                long t = new Date().getTime();
                 Date nextUpdate = new Date(t + 1000);
-                
+
                 for (AID trafficLight : trafficLightAgents) {
                     if (activeDirection.equalsIgnoreCase("SE")) {
-                                                
+
                         if (trafficLightsMetadata.get(trafficLight).get("location").equalsIgnoreCase("W") && trafficLightsMetadata.get(trafficLight).get("direction").equalsIgnoreCase("E")) {
                             SendTrafficLightNewState(trafficLight, "green", nextUpdate);
                         }

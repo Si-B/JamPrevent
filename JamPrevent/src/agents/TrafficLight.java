@@ -99,7 +99,7 @@ public class TrafficLight extends Agent {
 
                 if (message.equals("setState")) {
 //                    System.out.println("setting state");
-                        
+
                     Date nextUpdate = new Date(Long.parseLong(m.getUserDefinedParameter("nextUpdate")));
                     addBehaviour(new WakerBehaviour(myAgent, nextUpdate) {
 
@@ -108,7 +108,7 @@ public class TrafficLight extends Agent {
                             super.onWake(); //To change body of generated methods, choose Tools | Templates.
                             setState(m.getUserDefinedParameter("state"));
                         }
-                                            
+
                     });
                 }
 
