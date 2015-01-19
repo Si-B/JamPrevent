@@ -55,7 +55,7 @@ public class ReportingAgent extends Agent{
             }                        
         });
         
-        addBehaviour(new TickerBehaviour(this, 600) {
+        addBehaviour(new TickerBehaviour(this, 1000) {
 
             @Override
             public void onTick() {
