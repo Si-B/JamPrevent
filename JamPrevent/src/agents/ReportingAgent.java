@@ -47,7 +47,7 @@ public class ReportingAgent extends Agent {
 
         if (arguments.length > 0) {
             pathToDump = arguments[0].toString();
-            dumpFile = new File(pathToDump + "/state.json");
+            dumpFile = new File(pathToDump, "state.json");
         }
 
         //Find all known TrafficLights
