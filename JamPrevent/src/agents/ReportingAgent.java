@@ -8,6 +8,7 @@ package agents;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
+import jade.core.behaviours.OneShotBehaviour;
 import jade.core.behaviours.TickerBehaviour;
 import jade.core.behaviours.WakerBehaviour;
 import jade.domain.DFService;
@@ -15,7 +16,7 @@ import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
-import jade.lang.acl.MessageTemplate;
+import jade.lang.acl.UnreadableException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -23,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import messages.TrafficLightProperties;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -30,7 +32,7 @@ import org.json.simple.JSONObject;
  *
  * @author sib
  */
-public class ReportingAgent extends Agent {
+public class ReportingAgent extends BaseAgent {
 
     private final List<AID> trafficLightAgents = new ArrayList<>();
     private final ArrayList<JSONObject> trafficLightStates = new ArrayList<>();
@@ -57,51 +59,100 @@ public class ReportingAgent extends Agent {
         addBehaviour(new RequestTrafficLightsToDumpPropertiesBehaviour(this, 100));
 
         //listening to messages of TrafficLights
-        addBehaviour(new CyclicBehaviour(this) {
+        addBehaviour(new ReceiveMessagesBehaviour());
+    }
 
-            @Override
-            public void action() {
-                MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.INFORM);
-                ACLMessage msg = receive(mt);
-                if (msg != null) {
-                    if (msg.getContent().equalsIgnoreCase("dumpProperties")) {
-                        if (msg.getAllUserDefinedParameters().size() > 0) {
+    private class HandleTrafficLightPropertiesInform extends OneShotBehaviour {
 
-                            if (Integer.parseInt(msg.getUserDefinedParameter("index")) == requestIndex) {
-                                JSONObject currentTrafficLight = new JSONObject();
-                                currentTrafficLight.put("location", msg.getUserDefinedParameter("location").toLowerCase());
-                                currentTrafficLight.put("direction", msg.getUserDefinedParameter("direction").toLowerCase());
-                                currentTrafficLight.put("state", msg.getUserDefinedParameter("state").toLowerCase());
-                                currentTrafficLight.put("load", msg.getUserDefinedParameter("carCount"));
-                                trafficLightStates.add(currentTrafficLight);
-                                receivedAnswersPerIndex++;
-                            }
-                        }
-                    }
+        private final ACLMessage msg;
 
-                    if (receivedAnswersPerIndex == trafficLightAgents.size()) {
+        public HandleTrafficLightPropertiesInform(Agent myAgent, ACLMessage msg) {
+            super(myAgent);
+            this.msg = msg;
+        }
 
-                        JSONArray outputValues = new JSONArray();
+        @Override
+        public void action() {
 
-                        for (JSONObject currentTrafficLightState : trafficLightStates) {
-                            outputValues.add(currentTrafficLightState);
-                        }
+            TrafficLightProperties tlp;
+            try {
+                tlp = (TrafficLightProperties) msg.getContentObject();
 
-                        try {
-                            try (FileOutputStream file = new FileOutputStream(dumpFile)) {
-                                file.write(outputValues.toJSONString().getBytes());
-                            }
-                        } catch (IOException ex) {
-                            Logger.getLogger(ReportingAgent.class.getName()).log(Level.SEVERE, null, ex);
-                        }
-                        receivedAnswersPerIndex = 0;
-                        trafficLightStates.clear();
-                        requestIndex++;
-                    }
+                if (tlp.getIndex() == requestIndex) {
+                    JSONObject currentTrafficLight = new JSONObject();
+                    currentTrafficLight.put("location", tlp.getLocation().toLowerCase());
+                    currentTrafficLight.put("direction", tlp.getDirection().toLowerCase());
+                    currentTrafficLight.put("state", tlp.getTrafficState().toLowerCase());
+                    currentTrafficLight.put("load", tlp.getCarCount());
+                    trafficLightStates.add(currentTrafficLight);
+                    receivedAnswersPerIndex++;
                 }
-            }
 
-        });
+                if (receivedAnswersPerIndex == trafficLightAgents.size()) {
+                    addBehaviour(new OneShotBehaviour() {
+
+                        @Override
+                        public void action() {
+                            JSONArray outputValues = new JSONArray();
+
+                            for (JSONObject currentTrafficLightState : trafficLightStates) {
+                                outputValues.add(currentTrafficLightState);
+                            }
+
+                            try {
+                                try (FileOutputStream file = new FileOutputStream(dumpFile)) {
+                                    file.write(outputValues.toJSONString().getBytes());
+                                }
+                            } catch (IOException ex) {
+                                Logger.getLogger(ReportingAgent.class.getName()).log(Level.SEVERE, null, ex);
+                            }
+                            receivedAnswersPerIndex = 0;
+                            trafficLightStates.clear();
+                            requestIndex++;
+                        }
+                    });
+                }
+
+            } catch (UnreadableException ex) {
+                Logger.getLogger(ReportingAgent.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+    }
+
+    private class ReceiveMessagesBehaviour extends CyclicBehaviour {
+
+        private static final long serialVersionUID = -5018397038252984135L;
+
+        @Override
+        public void action() {
+
+            ACLMessage msg = receive();
+            if (msg == null) {
+                block();
+                return;
+            }
+            try {
+                Object content = msg.getContentObject();
+
+                switch (msg.getPerformative()) {
+
+                    case (ACLMessage.INFORM):
+
+                        System.out.println("Request from " + msg.getSender().getLocalName());
+
+                        if (content instanceof TrafficLightProperties) {
+                            addBehaviour(new HandleTrafficLightPropertiesInform(myAgent, msg));
+                        } else {
+                            replyNotUnderstood(msg);
+                        }
+                        break;
+
+                    default:
+                        replyNotUnderstood(msg);
+                }
+            } catch (Exception ex) {
+            }
+        }
     }
 
     private class FindAndAddTrafficLightsBehaviour extends WakerBehaviour {
@@ -149,15 +200,23 @@ public class ReportingAgent extends Agent {
         }
 
         private void requestTrafficLightsToDumpProperties() {
+
+            TrafficLightProperties tlp = new TrafficLightProperties();
+            tlp.setIndex(requestIndex);
             jade.lang.acl.ACLMessage message = new jade.lang.acl.ACLMessage(
                     jade.lang.acl.ACLMessage.REQUEST);
             trafficLightAgents.stream().forEach((trafficLight) -> {
                 message.addReceiver(trafficLight);
             });
-            message.addUserDefinedParameter("index", String.valueOf(requestIndex));
-            message.setContent("dumpProperties");
+
+            try {
+                message.setContentObject(tlp);
+            } catch (IOException ex) {
+                Logger.getLogger(ReportingAgent.class.getName()).log(Level.SEVERE, null, ex);
+            }
+
             this.myAgent.send(message);
         }
     }
-    
+
 }

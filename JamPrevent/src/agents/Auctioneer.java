@@ -7,6 +7,7 @@ package agents;
 
 import jade.core.AID;
 import jade.core.Agent;
+import jade.core.behaviours.OneShotBehaviour;
 import jade.core.behaviours.SequentialBehaviour;
 import jade.core.behaviours.SimpleBehaviour;
 import jade.core.behaviours.TickerBehaviour;
@@ -16,18 +17,22 @@ import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
-import jade.lang.acl.MessageTemplate;
-import java.text.SimpleDateFormat;
+import jade.lang.acl.UnreadableException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import messages.TrafficLightLocationAndDirection;
+import messages.TrafficLightState;
 
 /**
  *
  * @author SiB
  */
-public class Auctioneer extends Agent {
+public class Auctioneer extends BaseAgent {
 
     private final List<AID> trafficLightAgents = new ArrayList<>();
     private final HashMap<AID, HashMap<String, String>> trafficLightsMetadata = new HashMap<>();
@@ -36,6 +41,38 @@ public class Auctioneer extends Agent {
     @Override
     public void setup() {
         addBehaviour(new DefaultExecutionBehaviour());
+    }
+
+    public class HandleTrafficLightLocationAndDirectionInform extends OneShotBehaviour {
+
+        private final ACLMessage msg;
+
+        public HandleTrafficLightLocationAndDirectionInform(Agent myAgent, ACLMessage msg) {
+            super(myAgent);
+            this.msg = msg;
+        }
+
+        @Override
+        public void action() {
+
+            TrafficLightLocationAndDirection tllad;
+            try {
+                tllad = (TrafficLightLocationAndDirection) msg.getContentObject();
+                if (trafficLightsMetadata.containsKey(msg.getSender())) {
+                    trafficLightsMetadata.get(msg.getSender()).put("location", tllad.getLocation());
+                    trafficLightsMetadata.get(msg.getSender()).put("direction", tllad.getDirection());
+                    System.out.println(tllad.getLocation() + " " + tllad.getDirection());
+                }
+
+                ACLMessage reply = msg.createReply();
+                reply.setPerformative(ACLMessage.CONFIRM);
+                send(reply);
+                System.out.println("TrafficLightLocationAndDirection received!");
+            } catch (UnreadableException ex) {
+                Logger.getLogger(Auctioneer.class.getName()).log(Level.SEVERE, null, ex);
+            }
+
+        }
     }
 
     public class DefaultExecutionBehaviour extends SequentialBehaviour {
@@ -71,21 +108,32 @@ public class Auctioneer extends Agent {
 
                     @Override
                     public void action() {
-                        MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.INFORM);
 
-                        ACLMessage msg = receive(mt);
-                        if (msg != null) {
-                            System.out.println(msg.getSender().getLocalName() + " sent to " + myAgent.getLocalName() + " -> " + msg.getContent());
+                        ACLMessage msg = receive();
+                        if (msg == null) {
+                            block();
+                            return;
+                        }
+                        try {
+                            Object content = msg.getContentObject();
 
-                            if (msg.getContent().equalsIgnoreCase("getLocationAndDirection")) {
-                                if (msg.getAllUserDefinedParameters().size() > 0) {
-                                    if (trafficLightsMetadata.containsKey(msg.getSender())) {
-                                        trafficLightsMetadata.get(msg.getSender()).put("location", msg.getUserDefinedParameter("location"));
-                                        trafficLightsMetadata.get(msg.getSender()).put("direction", msg.getUserDefinedParameter("direction"));
+                            switch (msg.getPerformative()) {
+
+                                case (ACLMessage.INFORM):
+
+                                    System.out.println("Request from " + msg.getSender().getLocalName());
+
+                                    if (content instanceof TrafficLightLocationAndDirection) {
+                                        addBehaviour(new HandleTrafficLightLocationAndDirectionInform(myAgent, msg));
+                                    } else {
+                                        replyNotUnderstood(msg);
                                     }
-                                    System.out.println(msg.getUserDefinedParameter("location") + " " + msg.getUserDefinedParameter("direction"));
-                                }
+                                    break;
+
+                                default:
+                                    replyNotUnderstood(msg);
                             }
+                        } catch (Exception ex) {
                         }
                     }
                 });
@@ -103,7 +151,7 @@ public class Auctioneer extends Agent {
                     super.onWake(); //To change body of generated methods, choose Tools | Templates.
                     findAndAddTrafficLights();
                     trafficLightAgents.stream().forEach((agent) -> {
-                        trafficLightsMetadata.put(agent, new HashMap<String, String>());
+                        trafficLightsMetadata.put(agent, new HashMap<>());
                         System.out.println("Found Trafficlight: " + agent.getLocalName());
                         askTrafficLightForLocationAndDirection(agent);
                     });
@@ -125,20 +173,25 @@ public class Auctioneer extends Agent {
                             }
                         }
                     } catch (FIPAException fe) {
-                        fe.printStackTrace();
                     }
                 }
 
                 private void askTrafficLightForLocationAndDirection(AID trafficLight) {
+
+                    TrafficLightLocationAndDirection tllaa = new TrafficLightLocationAndDirection();
+
                     jade.lang.acl.ACLMessage message = new jade.lang.acl.ACLMessage(
                             jade.lang.acl.ACLMessage.REQUEST);
                     message.addReceiver(trafficLight);
-                    message.setContent("getLocationAndDirection");
+                    try {
+                        message.setContentObject(tllaa);
+                    } catch (IOException ex) {
+                        Logger.getLogger(Auctioneer.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+
                     this.myAgent.send(message);
                 }
-
             }
-
         }
 
         private class SetStateBehaviour extends TickerBehaviour {
@@ -159,29 +212,29 @@ public class Auctioneer extends Agent {
                     if (activeDirection.equalsIgnoreCase("SE")) {
 
                         if (trafficLightsMetadata.get(trafficLight).get("location").equalsIgnoreCase("W") && trafficLightsMetadata.get(trafficLight).get("direction").equalsIgnoreCase("E")) {
-                            SendTrafficLightNewState(trafficLight, "green", nextUpdate);
+                            sendTrafficLightNewState(trafficLight, "green", nextUpdate);
                         }
 
                         if (trafficLightsMetadata.get(trafficLight).get("location").equalsIgnoreCase("E") && trafficLightsMetadata.get(trafficLight).get("direction").equalsIgnoreCase("W")) {
-                            SendTrafficLightNewState(trafficLight, "green", nextUpdate);
+                            sendTrafficLightNewState(trafficLight, "green", nextUpdate);
                         }
 
                         if (trafficLightsMetadata.get(trafficLight).get("location").equalsIgnoreCase("S") && trafficLightsMetadata.get(trafficLight).get("direction").equalsIgnoreCase("E")) {
-                            SendTrafficLightNewState(trafficLight, "red", nextUpdate);
+                            sendTrafficLightNewState(trafficLight, "red", nextUpdate);
                         }
 
                         lastDirection = "WE";
                     } else {
                         if (trafficLightsMetadata.get(trafficLight).get("location").equalsIgnoreCase("W") && trafficLightsMetadata.get(trafficLight).get("direction").equalsIgnoreCase("E")) {
-                            SendTrafficLightNewState(trafficLight, "red", nextUpdate);
+                            sendTrafficLightNewState(trafficLight, "red", nextUpdate);
                         }
 
                         if (trafficLightsMetadata.get(trafficLight).get("location").equalsIgnoreCase("E") && trafficLightsMetadata.get(trafficLight).get("direction").equalsIgnoreCase("W")) {
-                            SendTrafficLightNewState(trafficLight, "red", nextUpdate);
+                            sendTrafficLightNewState(trafficLight, "red", nextUpdate);
                         }
 
                         if (trafficLightsMetadata.get(trafficLight).get("location").equalsIgnoreCase("S") && trafficLightsMetadata.get(trafficLight).get("direction").equalsIgnoreCase("E")) {
-                            SendTrafficLightNewState(trafficLight, "green", nextUpdate);
+                            sendTrafficLightNewState(trafficLight, "green", nextUpdate);
                         }
 
                         lastDirection = "SE";
@@ -191,18 +244,27 @@ public class Auctioneer extends Agent {
                 activeDirection = lastDirection;
             }
 
-            private void SendTrafficLightNewState(AID trafficLight, String state, Date nextUpdate) {
+            private void sendTrafficLightNewState(AID trafficLight, String state, Date nextUpdate) {
+
+                TrafficLightState tls = new TrafficLightState();
+                tls.setTrafficState(state);
+                tls.setNextUpdate(nextUpdate);
+
                 jade.lang.acl.ACLMessage message = new jade.lang.acl.ACLMessage(
                         jade.lang.acl.ACLMessage.PROPOSE);
                 message.addReceiver(trafficLight);
-                message.addUserDefinedParameter("state", state);
-                message.addUserDefinedParameter("nextUpdate", String.valueOf(nextUpdate.getTime()));
-                message.setContent("setState");
+
+                try {
+                    message.setContentObject(tls);
+                } catch (IOException ex) {
+                    Logger.getLogger(Auctioneer.class.getName()).log(Level.SEVERE, null, ex);
+                }
+
                 this.myAgent.send(message);
             }
 
         }
-        
+
     }
 
 }
