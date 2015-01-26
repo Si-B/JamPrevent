@@ -5,6 +5,9 @@
  */
 package agents;
 
+import jade.content.lang.Codec;
+import jade.content.onto.OntologyException;
+import jade.content.onto.basic.Action;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.SequentialBehaviour;
@@ -27,13 +30,14 @@ import messages.TrafficLightLoadSimulation;
  *
  * @author knut
  */
-public class LoadSimulatorAgent extends Agent {
+public class LoadSimulatorAgent extends BaseAgent {
 
     private final List<AID> trafficLightAgents = new ArrayList<>();
     private final HashMap<AID, HashMap<String, String>> trafficLightsMetadata = new HashMap<>();
 
     @Override
     public void setup() {
+        super.setup();
         addBehaviour(new DefaultExecutionBehaviour());
     }
 
@@ -93,20 +97,32 @@ public class LoadSimulatorAgent extends Agent {
 
         private void sendTrafficLightAdditionalCars(AID trafficLight, int count) {
 
-            TrafficLightLoadSimulation tlls = new TrafficLightLoadSimulation();
-            tlls.setAdditionalCars(count);
-
-            jade.lang.acl.ACLMessage message = new jade.lang.acl.ACLMessage(
-                    jade.lang.acl.ACLMessage.PROPOSE);
-            message.addReceiver(trafficLight);
-
             try {
-                message.setContentObject(tlls);
-            } catch (IOException ex) {
+                TrafficLightLoadSimulation tlls = new TrafficLightLoadSimulation();
+                tlls.setAdditionalCars(count);
+                
+                jade.lang.acl.ACLMessage message = new jade.lang.acl.ACLMessage(
+                        jade.lang.acl.ACLMessage.PROPOSE);
+                
+                message.setLanguage(codec.getName());
+                message.setOntology(ontology.getName());
+                
+                getContentManager().fillContent(message, new Action(trafficLight, tlls));
+                
+                message.addReceiver(trafficLight);
+                
+//            try {
+//                message.setContentObject(tlls);
+//            } catch (IOException ex) {
+//                Logger.getLogger(LoadSimulatorAgent.class.getName()).log(Level.SEVERE, null, ex);
+//            }
+                
+                this.myAgent.send(message);
+            } catch (Codec.CodecException ex) {
+                Logger.getLogger(LoadSimulatorAgent.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (OntologyException ex) {
                 Logger.getLogger(LoadSimulatorAgent.class.getName()).log(Level.SEVERE, null, ex);
             }
-
-            this.myAgent.send(message);
         }
     }
 

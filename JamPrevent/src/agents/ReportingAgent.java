@@ -5,6 +5,11 @@
  */
 package agents;
 
+import jade.content.Concept;
+import jade.content.ContentElement;
+import jade.content.lang.Codec;
+import jade.content.onto.OntologyException;
+import jade.content.onto.basic.Action;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
@@ -24,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import messages.TrafficLightLoadSimulation;
 import messages.TrafficLightProperties;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -76,7 +82,9 @@ public class ReportingAgent extends BaseAgent {
 
             TrafficLightProperties tlp;
             try {
-                tlp = (TrafficLightProperties) msg.getContentObject();
+                ContentElement content = getContentManager().extractContent(msg);
+                Concept action = ((Action)content).getAction();                
+                tlp = (TrafficLightProperties) action;
 
                 if (tlp.getIndex() == requestIndex) {
                     JSONObject currentTrafficLight = new JSONObject();
@@ -111,9 +119,10 @@ public class ReportingAgent extends BaseAgent {
                             requestIndex++;
                         }
                     });
-                }
-
-            } catch (UnreadableException ex) {
+                }            
+            } catch (Codec.CodecException ex) {
+                Logger.getLogger(ReportingAgent.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (OntologyException ex) {
                 Logger.getLogger(ReportingAgent.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
@@ -132,7 +141,8 @@ public class ReportingAgent extends BaseAgent {
                 return;
             }
             try {
-                Object content = msg.getContentObject();
+                ContentElement content = getContentManager().extractContent(msg);
+                Concept action = ((Action)content).getAction();
 
                 switch (msg.getPerformative()) {
 
@@ -140,7 +150,7 @@ public class ReportingAgent extends BaseAgent {
 
                         System.out.println("Request from " + msg.getSender().getLocalName());
 
-                        if (content instanceof TrafficLightProperties) {
+                        if (action instanceof TrafficLightProperties) {
                             addBehaviour(new HandleTrafficLightPropertiesInform(myAgent, msg));
                         } else {
                             replyNotUnderstood(msg);
@@ -205,15 +215,28 @@ public class ReportingAgent extends BaseAgent {
             tlp.setIndex(requestIndex);
             jade.lang.acl.ACLMessage message = new jade.lang.acl.ACLMessage(
                     jade.lang.acl.ACLMessage.REQUEST);
+            
+            message.setLanguage(codec.getName());
+            message.setOntology(ontology.getName());
+            
             trafficLightAgents.stream().forEach((trafficLight) -> {
-                message.addReceiver(trafficLight);
+                try {
+                    getContentManager().fillContent(message, new Action(trafficLight, tlp));                
+                    message.addReceiver(trafficLight);
+                } catch (Codec.CodecException ex) {
+                    Logger.getLogger(ReportingAgent.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (OntologyException ex) {
+                    Logger.getLogger(ReportingAgent.class.getName()).log(Level.SEVERE, null, ex);
+                }
             });
 
-            try {
-                message.setContentObject(tlp);
-            } catch (IOException ex) {
-                Logger.getLogger(ReportingAgent.class.getName()).log(Level.SEVERE, null, ex);
-            }
+                        
+            
+//            try {
+//                message.setContentObject(tlp);
+//            } catch (IOException ex) {
+//                Logger.getLogger(ReportingAgent.class.getName()).log(Level.SEVERE, null, ex);
+//            }
 
             this.myAgent.send(message);
         }

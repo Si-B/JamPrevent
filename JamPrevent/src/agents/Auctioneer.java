@@ -5,6 +5,11 @@
  */
 package agents;
 
+import jade.content.Concept;
+import jade.content.ContentElement;
+import jade.content.lang.Codec;
+import jade.content.onto.OntologyException;
+import jade.content.onto.basic.Action;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.OneShotBehaviour;
@@ -40,6 +45,7 @@ public class Auctioneer extends BaseAgent {
 
     @Override
     public void setup() {
+        super.setup();
         addBehaviour(new DefaultExecutionBehaviour());
     }
 
@@ -57,7 +63,13 @@ public class Auctioneer extends BaseAgent {
 
             TrafficLightLocationAndDirection tllad;
             try {
-                tllad = (TrafficLightLocationAndDirection) msg.getContentObject();
+
+                ContentElement content = getContentManager().extractContent(msg);
+                Concept action = ((Action)content).getAction();                
+                tllad = (TrafficLightLocationAndDirection) action;
+                                
+                
+                
                 if (trafficLightsMetadata.containsKey(msg.getSender())) {
                     trafficLightsMetadata.get(msg.getSender()).put("location", tllad.getLocation());
                     trafficLightsMetadata.get(msg.getSender()).put("direction", tllad.getDirection());
@@ -67,8 +79,10 @@ public class Auctioneer extends BaseAgent {
                 ACLMessage reply = msg.createReply();
                 reply.setPerformative(ACLMessage.CONFIRM);
                 send(reply);
-                System.out.println("TrafficLightLocationAndDirection received!");
-            } catch (UnreadableException ex) {
+                System.out.println("TrafficLightLocationAndDirection received!");            
+            } catch (Codec.CodecException ex) {
+                Logger.getLogger(Auctioneer.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (OntologyException ex) {
                 Logger.getLogger(Auctioneer.class.getName()).log(Level.SEVERE, null, ex);
             }
 
@@ -111,11 +125,13 @@ public class Auctioneer extends BaseAgent {
 
                         ACLMessage msg = receive();
                         if (msg == null) {
-                            block();
+//                            block();
                             return;
                         }
                         try {
-                            Object content = msg.getContentObject();
+                            ContentElement content = getContentManager().extractContent(msg);
+                            Concept action = ((Action)content).getAction();
+//                            Object content = msg.getContentObject();
 
                             switch (msg.getPerformative()) {
 
@@ -123,7 +139,7 @@ public class Auctioneer extends BaseAgent {
 
                                     System.out.println("Request from " + msg.getSender().getLocalName());
 
-                                    if (content instanceof TrafficLightLocationAndDirection) {
+                                    if (action instanceof TrafficLightLocationAndDirection) {
                                         addBehaviour(new HandleTrafficLightLocationAndDirectionInform(myAgent, msg));
                                     } else {
                                         replyNotUnderstood(msg);
@@ -178,18 +194,29 @@ public class Auctioneer extends BaseAgent {
 
                 private void askTrafficLightForLocationAndDirection(AID trafficLight) {
 
-                    TrafficLightLocationAndDirection tllaa = new TrafficLightLocationAndDirection();
-
-                    jade.lang.acl.ACLMessage message = new jade.lang.acl.ACLMessage(
-                            jade.lang.acl.ACLMessage.REQUEST);
-                    message.addReceiver(trafficLight);
                     try {
-                        message.setContentObject(tllaa);
-                    } catch (IOException ex) {
+                        TrafficLightLocationAndDirection tllaa = new TrafficLightLocationAndDirection();
+
+                        jade.lang.acl.ACLMessage message = new jade.lang.acl.ACLMessage(
+                                jade.lang.acl.ACLMessage.REQUEST);
+                        
+                        message.setLanguage(codec.getName());
+                        message.setOntology(ontology.getName());
+                        
+                        getContentManager().fillContent(message, new Action(trafficLight, tllaa));
+                        message.addReceiver(trafficLight);
+//                    try {
+//                        message.setContentObject(tllaa);
+//                    } catch (IOException ex) {
+//                        Logger.getLogger(Auctioneer.class.getName()).log(Level.SEVERE, null, ex);
+//                    }
+                        
+                        this.myAgent.send(message);
+                    } catch (Codec.CodecException ex) {
+                        Logger.getLogger(Auctioneer.class.getName()).log(Level.SEVERE, null, ex);
+                    } catch (OntologyException ex) {
                         Logger.getLogger(Auctioneer.class.getName()).log(Level.SEVERE, null, ex);
                     }
-
-                    this.myAgent.send(message);
                 }
             }
         }
@@ -252,11 +279,19 @@ public class Auctioneer extends BaseAgent {
 
                 jade.lang.acl.ACLMessage message = new jade.lang.acl.ACLMessage(
                         jade.lang.acl.ACLMessage.PROPOSE);
+                
+                message.setLanguage(codec.getName());
+                message.setOntology(ontology.getName());                
+                
+                
                 message.addReceiver(trafficLight);
 
                 try {
-                    message.setContentObject(tls);
-                } catch (IOException ex) {
+                    getContentManager().fillContent(message, new Action(trafficLight, tls));
+//                    message.setContentObject(tls);
+                } catch (Codec.CodecException ex) {
+                    Logger.getLogger(Auctioneer.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (OntologyException ex) {
                     Logger.getLogger(Auctioneer.class.getName()).log(Level.SEVERE, null, ex);
                 }
 

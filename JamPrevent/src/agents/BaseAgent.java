@@ -5,21 +5,38 @@
  */
 package agents;
 
+import jade.content.lang.Codec;
+import jade.content.lang.sl.SLCodec;
+import jade.content.onto.Ontology;
+import jade.content.onto.OntologyException;
+import jade.content.onto.basic.Action;
 import jade.core.Agent;
 import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
-import jade.lang.acl.UnreadableException;
-import java.io.IOException;
-
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import ontologies.JamPreventOntology;
+import ontologies.JamPreventVocabulary;
 /**
  *
  * @author SiB
  */
-public class BaseAgent extends Agent {
+public class BaseAgent extends Agent implements JamPreventVocabulary{
+    
+    protected Codec codec = new SLCodec();
+    protected Ontology ontology = JamPreventOntology.getInstance();    
 
+    @Override
+    protected void setup() {
+        super.setup(); //To change body of generated methods, choose Tools | Templates.        
+        // Register language and ontology
+        getContentManager().registerLanguage(codec);
+        getContentManager().registerOntology(ontology);        
+    }        
+    
     protected void registerAgent(String type) {
         DFAgentDescription dfd = new DFAgentDescription();
         dfd.setName(this.getAID());
@@ -39,13 +56,17 @@ public class BaseAgent extends Agent {
 
     protected void replyNotUnderstood(ACLMessage msg) {
         try {
-            java.io.Serializable content = msg.getContentObject();
+            //            java.io.Serializable content = msg.getContentObject();
+            Action content = (Action) getContentManager().extractContent(msg);
             ACLMessage reply = msg.createReply();
             reply.setPerformative(ACLMessage.NOT_UNDERSTOOD);
-            reply.setContentObject(content);
+            getContentManager().fillContent(reply, new Action(msg.getSender(), content));
+            //reply.setContentObject(content);
             send(reply);
-        } catch (UnreadableException | IOException ex) {
+        } catch (Codec.CodecException ex) {
+            Logger.getLogger(BaseAgent.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (OntologyException ex) {
+            Logger.getLogger(BaseAgent.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-
 }

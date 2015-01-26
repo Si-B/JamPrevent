@@ -5,13 +5,13 @@
  */
 package messages;
 
-import java.io.Serializable;
+import jade.content.Concept;
 
 /**
  *
  * @author SiB
  */
-public class TrafficLightProperties implements Serializable {
+public class TrafficLightProperties implements Concept  {
 
     private String location;
     private String direction;

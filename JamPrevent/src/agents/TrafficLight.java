@@ -5,6 +5,12 @@
  */
 package agents;
 
+import jade.content.AgentAction;
+import jade.content.Concept;
+import jade.content.ContentElement;
+import jade.content.lang.Codec;
+import jade.content.onto.OntologyException;
+import jade.content.onto.basic.Action;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.OneShotBehaviour;
@@ -19,21 +25,22 @@ import messages.TrafficLightLoadSimulation;
 import messages.TrafficLightLocationAndDirection;
 import messages.TrafficLightProperties;
 import messages.TrafficLightState;
+import ontologies.JamPreventVocabulary;
 
 /**
  *
  * @author SiB
  */
-public class TrafficLight extends BaseAgent {
+public class TrafficLight extends BaseAgent{
 
-    private String location;
-    private String direction;
-    private String trafficState;
-    private int carCount;
+    private String location = "";
+    private String direction = "";
+    private String trafficState = "";
+    private int carCount = 0;
 
     @Override
     public void setup() {
-
+        super.setup();
         Object[] arguments = getArguments();
         trafficState = "red";
 
@@ -43,7 +50,7 @@ public class TrafficLight extends BaseAgent {
         }
         addBehaviour(new ReceiveMessagesBehaviour());
 
-        addBehaviour(new AddCarsBehaviour());
+       // addBehaviour(new AddCarsBehaviour());
 
         registerAgent("TrafficLight-Service");
     }
@@ -58,17 +65,21 @@ public class TrafficLight extends BaseAgent {
         }
 
         @Override
-        public void action() {
+        public void action() {            
             try {
-                TrafficLightLoadSimulation tlp = (TrafficLightLoadSimulation) msg.getContentObject();
-                addAddditionalCars(tlp.getAdditionalCars());
+                ContentElement content = getContentManager().extractContent(msg);
+                Concept action = ((Action)content).getAction();                
+                TrafficLightLoadSimulation tlls = (TrafficLightLoadSimulation) action;
+                addAddditionalCars(tlls.getAdditionalCars());
 
                 ACLMessage reply = msg.createReply();
                 reply.setPerformative(ACLMessage.CONFIRM);
 
                 send(reply);
                 System.out.println("TrafficLightProperties sent!");
-            } catch (UnreadableException ex) {
+            } catch (Codec.CodecException ex) {
+                Logger.getLogger(TrafficLight.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (OntologyException ex) {
                 Logger.getLogger(TrafficLight.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
@@ -87,17 +98,18 @@ public class TrafficLight extends BaseAgent {
                 return;
             }
             try {
-                Object content = msg.getContentObject();
-
+                ContentElement content = getContentManager().extractContent(msg);
+                Concept action = ((Action)content).getAction();
+                
                 switch (msg.getPerformative()) {
 
                     case (ACLMessage.REQUEST):
-
+                        
                         System.out.println("Request from " + msg.getSender().getLocalName());
 
-                        if (content instanceof TrafficLightLocationAndDirection) {
+                        if (action instanceof TrafficLightLocationAndDirection) {
                             addBehaviour(new HandleTrafficLightLocationAndDirectionRequest(myAgent, msg));
-                        } else if (content instanceof TrafficLightProperties) {
+                        } else if (action instanceof TrafficLightProperties) {
                             addBehaviour(new HandleTrafficLightPropertiesRequest(myAgent, msg));
                         } else {
                             replyNotUnderstood(msg);
@@ -105,10 +117,10 @@ public class TrafficLight extends BaseAgent {
                         break;
 
                     case (ACLMessage.PROPOSE):
-
-                        if (content instanceof TrafficLightState) {
+//                        AgentAction action = ((Action)content).getAction();
+                        if (action instanceof TrafficLightState) {
                             addBehaviour(new HandleTrafficLightStatePropose(myAgent, msg));
-                        } else if (content instanceof TrafficLightLoadSimulation) {
+                        } else if (action instanceof TrafficLightLoadSimulation) {
                             addBehaviour(new HandleTrafficLightLoadSimulationPropose(myAgent, msg));
                         }
 
@@ -133,9 +145,12 @@ public class TrafficLight extends BaseAgent {
 
         @Override
         public void action() {
-            TrafficLightState tlp;
             try {
-                tlp = (TrafficLightState) msg.getContentObject();
+                TrafficLightState tlp;
+                
+                ContentElement content = getContentManager().extractContent(msg);
+                Concept action = ((Action)content).getAction();                
+                tlp = (TrafficLightState) action;
 
                 addBehaviour(new WakerBehaviour(myAgent, tlp.getNextUpdate()) {
 
@@ -151,9 +166,12 @@ public class TrafficLight extends BaseAgent {
                 reply.setPerformative(ACLMessage.CONFIRM);
                 send(reply);
                 System.out.println("TrafficLightState received!");
-            } catch (UnreadableException ex) {
+            } catch (Codec.CodecException ex) {
+                Logger.getLogger(TrafficLight.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (OntologyException ex) {
                 Logger.getLogger(TrafficLight.class.getName()).log(Level.SEVERE, null, ex);
             }
+
 
         }
     }
@@ -170,17 +188,29 @@ public class TrafficLight extends BaseAgent {
         @Override
         public void action() {
             try {
-                TrafficLightProperties tlp = (TrafficLightProperties) msg.getContentObject();
+//                TrafficLightProperties tlp = (TrafficLightProperties) msg.getContentObject();
+                
+                ContentElement content = getContentManager().extractContent(msg);
+                Concept action = ((Action)content).getAction();                
+                TrafficLightProperties tlp = (TrafficLightProperties) action;
                 tlp.setLocation(getLocation());
                 tlp.setDirection(getDirection());
                 tlp.setCarCount(getCarCount());
                 tlp.setTrafficState(getTrafficState());
                 ACLMessage reply = msg.createReply();
+                
+                reply.setLanguage(codec.getName());
+                reply.setOntology(ontology.getName());                  
+                
                 reply.setPerformative(ACLMessage.INFORM);
-                reply.setContentObject(tlp);
+                getContentManager().fillContent(reply, new Action(msg.getSender(), tlp));
+//                reply.setContentObject(tlp);
                 send(reply);
                 System.out.println("TrafficLightProperties sent!");
-            } catch (UnreadableException | IOException ex) {
+            } catch (Codec.CodecException ex) {
+                Logger.getLogger(TrafficLight.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (OntologyException ex) {
+                Logger.getLogger(TrafficLight.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
     }
@@ -196,17 +226,32 @@ public class TrafficLight extends BaseAgent {
 
         @Override
         public void action() {
+
             try {
-                TrafficLightLocationAndDirection tllad = (TrafficLightLocationAndDirection) msg.getContentObject();
+                ContentElement content = getContentManager().extractContent(msg);
+                Concept action = ((Action)content).getAction();                
+                TrafficLightLocationAndDirection tllad = (TrafficLightLocationAndDirection) action;
+                
+                
                 tllad.setLocation(getLocation());
-                tllad.setDirection(getDirection());
+                tllad.setDirection(getDirection());                              
+                
                 ACLMessage reply = msg.createReply();
+                
+                reply.setLanguage(codec.getName());
+                reply.setOntology(ontology.getName());                
+                
                 reply.setPerformative(ACLMessage.INFORM);
-                reply.setContentObject(tllad);
+//                reply.setContentObject(tllad);
+                getContentManager().fillContent(reply, new Action(msg.getSender(), tllad));
                 send(reply);
-                System.out.println("TrafficLightLocationAndDirection sent!");
-            } catch (UnreadableException | IOException ex) {
+                System.out.println("TrafficLightLocationAndDirection sent!");            
+            } catch (Codec.CodecException ex) {
+                Logger.getLogger(TrafficLight.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (OntologyException ex) {
+                Logger.getLogger(TrafficLight.class.getName()).log(Level.SEVERE, null, ex);
             }
+
         }
     }
 
@@ -219,9 +264,20 @@ public class TrafficLight extends BaseAgent {
             ACLMessage m = receive(tmp);
 
             if (m != null) {
-                String message = m.getContent();
-                if (message.equals("registerAdditionalCars")) {
-                    addAddditionalCars(Integer.parseInt(m.getUserDefinedParameter("additionalCars")));
+                try {
+                    ContentElement content = getContentManager().extractContent(m);
+                    Concept action = ((Action)content).getAction();
+                    if (action instanceof TrafficLightLoadSimulation){
+                        TrafficLightLoadSimulation tlls = (TrafficLightLoadSimulation) action;
+                        addAddditionalCars(tlls.getAdditionalCars());
+                    }
+//                if (message.equals("registerAdditionalCars")) {
+//                    addAddditionalCars(Integer.parseInt(m.getUserDefinedParameter("additionalCars")));
+//                }
+                } catch (Codec.CodecException ex) {
+                    Logger.getLogger(TrafficLight.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (OntologyException ex) {
+                    Logger.getLogger(TrafficLight.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
         }

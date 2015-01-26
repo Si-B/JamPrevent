@@ -5,13 +5,13 @@
  */
 package messages;
 
-import java.io.Serializable;
+import jade.content.AgentAction;
 
 /**
  *
  * @author SiB
  */
-public class TrafficLightLoadSimulation implements Serializable {
+public class TrafficLightLoadSimulation implements AgentAction {
 
     private int additionalCars;
 

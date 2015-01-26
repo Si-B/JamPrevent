@@ -5,14 +5,14 @@
  */
 package messages;
 
-import java.io.Serializable;
+import jade.content.AgentAction;
 import java.util.Date;
 
 /**
  *
  * @author SiB
  */
-public class TrafficLightState implements Serializable {
+public class TrafficLightState implements AgentAction {
 
     private Date nextUpdate;
     private String trafficState;
