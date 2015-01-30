@@ -27,4 +27,9 @@ public interface JamPreventVocabulary {
     
     public static final String TRAFFIC_LIGHT_LOAD_SIMULATION = "TrafficLightLoadSimulation";
     public static final String TRAFFIC_LIGHT_LOAD_SIMULATION_ADDITIONALCARS = "additionalCars";
+    
+    public static final String TRAFFIC_LIGHT_OFFER = "TrafficLightOffer";
+    public static final String TRAFFIC_LIGHT_OFFER_CARCOUNT = "carCount";
+    public static final String TRAFFIC_LIGHT_OFFER_INDEX = "index";
+    public static final String TRAFFIC_LIGHT_OFFER_LAST_GREEN_TIME = "lastGreenTime";
 }

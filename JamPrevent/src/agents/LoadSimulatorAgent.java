@@ -30,9 +30,9 @@ import messages.TrafficLightLoadSimulation;
  *
  * @author knut
  */
-public class LoadSimulatorAgent extends BaseAgent {
+public class LoadSimulatorAgent extends FindTrafficLightsAgent {
 
-    private final List<AID> trafficLightAgents = new ArrayList<>();
+//    private final List<AID> trafficLightAgents = new ArrayList<>();
     private final HashMap<AID, HashMap<String, String>> trafficLightsMetadata = new HashMap<>();
 
     @Override
@@ -41,44 +41,11 @@ public class LoadSimulatorAgent extends BaseAgent {
         addBehaviour(new DefaultExecutionBehaviour());
     }
 
-    public class FindTrafficLightsBehaviour extends SequentialBehaviour {
-
-        public FindTrafficLightsBehaviour() {
-            addSubBehaviour(new WakerBehaviour(this.myAgent, 1000) {
-                @Override
-                protected void onWake() {
-                    super.onWake(); //To change body of generated methods, choose Tools | Templates.
-                    findAndAddTrafficLights();
-                }
-            });
-        }
-
-        private void findAndAddTrafficLights() {
-            DFAgentDescription template = new DFAgentDescription();
-            ServiceDescription sd = new ServiceDescription();
-            sd.setType("TrafficLight-Service");
-            template.addServices(sd);
-
-            try {
-                DFAgentDescription[] dfds = DFService.search(this.myAgent, template);
-
-                if (dfds.length > 0) {
-                    for (DFAgentDescription trafficLightAgentDescription : dfds) {
-                        AID trafficLightAgent = trafficLightAgentDescription.getName();
-                        trafficLightAgents.add(trafficLightAgent);
-                    }
-                }
-            } catch (FIPAException fe) {
-                fe.printStackTrace();
-            }
-        }
-    }
-
     public class DefaultExecutionBehaviour extends SequentialBehaviour {
 
         public DefaultExecutionBehaviour() {
-            addSubBehaviour(new FindTrafficLightsBehaviour());
-            addSubBehaviour(new SetStateBehaviour(this.myAgent, 2500));
+//            addSubBehaviour(new FindTrafficLightsBehaviour());
+            addSubBehaviour(new SetStateBehaviour(this.myAgent, 1000));
         }
 
         private class SetStateBehaviour extends TickerBehaviour {

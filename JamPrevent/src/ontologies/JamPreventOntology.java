@@ -14,6 +14,7 @@ import jade.content.schema.ObjectSchema;
 import jade.content.schema.PrimitiveSchema;
 import messages.TrafficLightLoadSimulation;
 import messages.TrafficLightLocationAndDirection;
+import messages.TrafficLightOffer;
 import messages.TrafficLightProperties;
 import messages.TrafficLightState;
 
@@ -53,13 +54,18 @@ public class JamPreventOntology extends Ontology implements JamPreventVocabulary
          cs.add(TRAFFIC_LIGHT_PROPERTIES_TRAFFICSTATE, (PrimitiveSchema) getSchema(BasicOntology.STRING), ObjectSchema.OPTIONAL);         
          cs.add(TRAFFIC_LIGHT_PROPERTIES_DIRECTION, (PrimitiveSchema) getSchema(BasicOntology.STRING), ObjectSchema.OPTIONAL);         
 
+         cs =  new ConceptSchema(TRAFFIC_LIGHT_OFFER);         
+         add(cs, TrafficLightOffer.class);
+         cs.add(TRAFFIC_LIGHT_OFFER_CARCOUNT, (PrimitiveSchema) getSchema(BasicOntology.INTEGER), ObjectSchema.OPTIONAL);
+         cs.add(TRAFFIC_LIGHT_OFFER_INDEX, (PrimitiveSchema) getSchema(BasicOntology.INTEGER), ObjectSchema.OPTIONAL);
+         cs.add(TRAFFIC_LIGHT_OFFER_LAST_GREEN_TIME, (PrimitiveSchema) getSchema(BasicOntology.STRING), ObjectSchema.OPTIONAL);
+         
          // ------- Add AgentActions
          AgentActionSchema as = new AgentActionSchema(TRAFFIC_LIGHT_STATE);
          add(as, TrafficLightState.class);
          as.add(TRAFFIC_LIGHT_STATE_NEXTUPDATE, (PrimitiveSchema) getSchema(BasicOntology.DATE), ObjectSchema.OPTIONAL);
          as.add(TRAFFIC_LIGHT_STATE_TRAFFICSTATE, (PrimitiveSchema) getSchema(BasicOntology.STRING), ObjectSchema.OPTIONAL);
-         
-         
+                  
          as = new AgentActionSchema(TRAFFIC_LIGHT_LOAD_SIMULATION);
          add(as, TrafficLightLoadSimulation.class);
          as.add(TRAFFIC_LIGHT_LOAD_SIMULATION_ADDITIONALCARS, (PrimitiveSchema) getSchema(BasicOntology.INTEGER), ObjectSchema.OPTIONAL);

@@ -12,6 +12,7 @@ import jade.content.onto.OntologyException;
 import jade.content.onto.basic.Action;
 import jade.core.AID;
 import jade.core.Agent;
+import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.OneShotBehaviour;
 import jade.core.behaviours.TickerBehaviour;
@@ -21,7 +22,6 @@ import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
-import jade.lang.acl.UnreadableException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import messages.TrafficLightLoadSimulation;
 import messages.TrafficLightProperties;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -38,9 +37,8 @@ import org.json.simple.JSONObject;
  *
  * @author sib
  */
-public class ReportingAgent extends BaseAgent {
-
-    private final List<AID> trafficLightAgents = new ArrayList<>();
+public class ReportingAgent extends FindTrafficLightsAgent {
+    
     private final ArrayList<JSONObject> trafficLightStates = new ArrayList<>();
     private int requestIndex = 0;
     private int receivedAnswersPerIndex = 0;
@@ -57,9 +55,6 @@ public class ReportingAgent extends BaseAgent {
             pathToDump = arguments[0].toString();
             dumpFile = new File(pathToDump, "state.json");
         }
-
-        //Find all known TrafficLights
-        addBehaviour(new FindAndAddTrafficLightsBehaviour(this, 1000));
 
         //requesting known TrafficLights to dump their properies to me
         addBehaviour(new RequestTrafficLightsToDumpPropertiesBehaviour(this, 100));
@@ -165,39 +160,6 @@ public class ReportingAgent extends BaseAgent {
         }
     }
 
-    private class FindAndAddTrafficLightsBehaviour extends WakerBehaviour {
-
-        public FindAndAddTrafficLightsBehaviour(Agent a, long timeout) {
-            super(a, timeout);
-        }
-
-        @Override
-        protected void onWake() {
-            super.onWake(); //To change body of generated methods, choose Tools | Templates.
-            findAndAddTrafficLights();
-        }
-
-        private void findAndAddTrafficLights() {
-            DFAgentDescription template = new DFAgentDescription();
-            ServiceDescription sd = new ServiceDescription();
-            sd.setType("TrafficLight-Service");
-            template.addServices(sd);
-
-            try {
-                DFAgentDescription[] dfds = DFService.search(this.myAgent, template);
-
-                if (dfds.length > 0) {
-                    for (DFAgentDescription trafficLightAgentDescription : dfds) {
-                        AID trafficLightAgent = trafficLightAgentDescription.getName();
-                        trafficLightAgents.add(trafficLightAgent);
-                    }
-                }
-            } catch (FIPAException fe) {
-                fe.printStackTrace();
-            }
-        }
-    }
-
     private class RequestTrafficLightsToDumpPropertiesBehaviour extends TickerBehaviour {
 
         public RequestTrafficLightsToDumpPropertiesBehaviour(Agent a, long period) {
@@ -229,14 +191,6 @@ public class ReportingAgent extends BaseAgent {
                     Logger.getLogger(ReportingAgent.class.getName()).log(Level.SEVERE, null, ex);
                 }
             });
-
-                        
-            
-//            try {
-//                message.setContentObject(tlp);
-//            } catch (IOException ex) {
-//                Logger.getLogger(ReportingAgent.class.getName()).log(Level.SEVERE, null, ex);
-//            }
 
             this.myAgent.send(message);
         }
