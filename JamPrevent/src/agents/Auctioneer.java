@@ -48,6 +48,7 @@ public class Auctioneer extends BaseAgent {
 
     private final List<AID> trafficLightAgents = new ArrayList<>();
     private final HashMap<AID, HashMap<String, String>> trafficLightsMetadata = new HashMap<>();
+    private final HashMap<String, HashMap<String, AID>> trafficLightsByDirection = new HashMap<>();
     private String lastDirection = "WE";
     private int requestIndex = 0;
     private int receivedAnswersPerIndex = 0;
@@ -74,15 +75,47 @@ public class Auctioneer extends BaseAgent {
                     trafficLightHighestCarCount = trafficLight;
                 }
             }
-            long t = new Date().getTime();
-            Date nextUpdate = new Date(t + 200);
             
-            sendTrafficLightNewState(trafficLightHighestCarCount, "green", nextUpdate);
+            List<AID> trafficLightsThatShouldBeGreen = new ArrayList<AID>();
+            trafficLightsThatShouldBeGreen.add(trafficLightHighestCarCount);
+            
+            switch (trafficLightsMetadata.get(trafficLightHighestCarCount).get("location")){
+                case ("W"):
+                    trafficLightsThatShouldBeGreen.add(trafficLightsByDirection.get("E").get("W"));
+                    break;
+                    
+                case ("E"):
+                    AID southToEastTrafficLight = trafficLightsByDirection.get("S").get("E");
+                    AID westToEastTrafficLight  = trafficLightsByDirection.get("W").get("E");
+                    
+                    int southToEastCarCount = Integer.valueOf(trafficLightsMetadata.get(southToEastTrafficLight).get("carCount"));
+                    int westToEastCarCount = Integer.valueOf(trafficLightsMetadata.get(westToEastTrafficLight).get("carCount"));
+                    if(southToEastCarCount > westToEastCarCount){
+                        trafficLightsThatShouldBeGreen.add(southToEastTrafficLight);
+                    }
+                    else{
+                        trafficLightsThatShouldBeGreen.add(westToEastTrafficLight);
+                    }
+                    break;
+                    
+                case ("S"):
+                    trafficLightsThatShouldBeGreen.add(trafficLightsByDirection.get("E").get("W"));
+                    break;
+            }
+            
+                
+            long t = new Date().getTime();
+            Date nextUpdate = new Date(t + 1000);
+            
+//            sendTrafficLightNewState(trafficLightHighestCarCount, "green", nextUpdate);
             
             for(AID trafficLight : trafficLightsMetadata.keySet()){
-                if(trafficLight != trafficLightHighestCarCount){
-                    sendTrafficLightNewState(trafficLight, "red", nextUpdate);    
+                if(trafficLightsThatShouldBeGreen.contains(trafficLight)){
+                    sendTrafficLightNewState(trafficLight, "green", nextUpdate);    
                 }                
+                else {
+                    sendTrafficLightNewState(trafficLight, "red", nextUpdate);    
+                }
             }                        
         }
         
@@ -252,6 +285,9 @@ public class Auctioneer extends BaseAgent {
                     trafficLightsMetadata.get(msg.getSender()).put("direction", tllad.getDirection());
                     System.out.println(tllad.getLocation() + " " + tllad.getDirection());
                 }
+                
+                trafficLightsByDirection.put(tllad.getLocation(), new HashMap<>());
+                trafficLightsByDirection.get(tllad.getLocation()).put(tllad.getDirection(), msg.getSender());
 
                 ACLMessage reply = msg.createReply();
                 reply.setPerformative(ACLMessage.CONFIRM);
