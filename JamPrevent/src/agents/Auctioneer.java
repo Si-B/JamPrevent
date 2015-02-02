@@ -48,7 +48,7 @@ public class Auctioneer extends BaseAgent {
 
     private final List<AID> trafficLightAgents = new ArrayList<>();
     private final HashMap<AID, HashMap<String, String>> trafficLightsMetadata = new HashMap<>();
-    private final HashMap<String, HashMap<String, AID>> trafficLightsByDirection = new HashMap<>();
+    private final HashMap<String, AID> trafficLightsByDirection = new HashMap<>();
     private String lastDirection = "WE";
     private int requestIndex = 0;
     private int receivedAnswersPerIndex = 0;
@@ -68,25 +68,45 @@ public class Auctioneer extends BaseAgent {
         @Override
         public void action() {
             
-            AID trafficLightHighestCarCount = trafficLightAgents.get(0);
+            AID trafficLightWithHighestCarCount = trafficLightAgents.get(0);
             
             for(AID trafficLight : trafficLightsMetadata.keySet()){
-                if(Integer.valueOf(trafficLightsMetadata.get(trafficLight).get("carCount")) > Integer.valueOf(trafficLightsMetadata.get(trafficLightHighestCarCount).get("carCount"))){
-                    trafficLightHighestCarCount = trafficLight;
+                if(Integer.valueOf(trafficLightsMetadata.get(trafficLight).get("carCount")) > Integer.valueOf(trafficLightsMetadata.get(trafficLightWithHighestCarCount).get("carCount"))){
+                    trafficLightWithHighestCarCount = trafficLight;
                 }
             }
             
             List<AID> trafficLightsThatShouldBeGreen = new ArrayList<AID>();
-            trafficLightsThatShouldBeGreen.add(trafficLightHighestCarCount);
+            trafficLightsThatShouldBeGreen.add(trafficLightWithHighestCarCount);
             
-            switch (trafficLightsMetadata.get(trafficLightHighestCarCount).get("location")){
-                case ("W"):
-                    trafficLightsThatShouldBeGreen.add(trafficLightsByDirection.get("E").get("W"));
+            String locationDirection = trafficLightsMetadata.get(trafficLightWithHighestCarCount).get("location") + trafficLightsMetadata.get(trafficLightWithHighestCarCount).get("direction");
+            
+            switch (locationDirection){
+                case ("SW"):
+                    trafficLightsThatShouldBeGreen.add(trafficLightsByDirection.get("SE"));
                     break;
                     
-                case ("E"):
-                    AID southToEastTrafficLight = trafficLightsByDirection.get("S").get("E");
-                    AID westToEastTrafficLight  = trafficLightsByDirection.get("W").get("E");
+                case ("SE"):
+                    AID southToWestTrafficLight = trafficLightsByDirection.get("SW");
+                    AID eastToWestTrafficLight  = trafficLightsByDirection.get("EW");
+                    
+                    int southToWestCarCount = Integer.valueOf(trafficLightsMetadata.get(southToWestTrafficLight).get("carCount"));
+                    int eastToWestCarCount = Integer.valueOf(trafficLightsMetadata.get(eastToWestTrafficLight).get("carCount"));
+                    if(southToWestCarCount > eastToWestCarCount){
+                        trafficLightsThatShouldBeGreen.add(southToWestTrafficLight);
+                    }
+                    else{
+                        trafficLightsThatShouldBeGreen.add(eastToWestTrafficLight);
+                    }
+                    break;
+                    
+                case ("WE"):
+                    trafficLightsThatShouldBeGreen.add(trafficLightsByDirection.get("EW"));
+                    break;
+                    
+                case ("EW"):
+                    AID southToEastTrafficLight = trafficLightsByDirection.get("SE");
+                    AID westToEastTrafficLight  = trafficLightsByDirection.get("WE");
                     
                     int southToEastCarCount = Integer.valueOf(trafficLightsMetadata.get(southToEastTrafficLight).get("carCount"));
                     int westToEastCarCount = Integer.valueOf(trafficLightsMetadata.get(westToEastTrafficLight).get("carCount"));
@@ -96,19 +116,14 @@ public class Auctioneer extends BaseAgent {
                     else{
                         trafficLightsThatShouldBeGreen.add(westToEastTrafficLight);
                     }
-                    break;
+                    break;  
                     
-                case ("S"):
-                    trafficLightsThatShouldBeGreen.add(trafficLightsByDirection.get("E").get("W"));
-                    break;
             }
             
                 
             long t = new Date().getTime();
             Date nextUpdate = new Date(t + 1000);
-            
-//            sendTrafficLightNewState(trafficLightHighestCarCount, "green", nextUpdate);
-            
+                      
             for(AID trafficLight : trafficLightsMetadata.keySet()){
                 if(trafficLightsThatShouldBeGreen.contains(trafficLight)){
                     sendTrafficLightNewState(trafficLight, "green", nextUpdate);    
@@ -286,8 +301,7 @@ public class Auctioneer extends BaseAgent {
                     System.out.println(tllad.getLocation() + " " + tllad.getDirection());
                 }
                 
-                trafficLightsByDirection.put(tllad.getLocation(), new HashMap<>());
-                trafficLightsByDirection.get(tllad.getLocation()).put(tllad.getDirection(), msg.getSender());
+                trafficLightsByDirection.put(tllad.getLocation() + tllad.getDirection(), msg.getSender());
 
                 ACLMessage reply = msg.createReply();
                 reply.setPerformative(ACLMessage.CONFIRM);
@@ -305,8 +319,17 @@ public class Auctioneer extends BaseAgent {
     public class DefaultExecutionBehaviour extends SequentialBehaviour {
 
         public DefaultExecutionBehaviour() {
-            addSubBehaviour(new FindExistingTrafficLightsBehaviour(this.myAgent, 1000));
-            addSubBehaviour(new RequestTrafficLightOfferBehaviour(this.myAgent, 500));
+            addSubBehaviour(new FindExistingTrafficLightsBehaviour(this.myAgent, 3000));
+            addSubBehaviour(new WakerBehaviour(myAgent, 3000) {
+
+                @Override
+                protected void onWake() {
+                    super.onWake(); //To change body of generated methods, choose Tools | Templates.
+                    myAgent.addBehaviour(new RequestTrafficLightOfferBehaviour(this.myAgent, 500));
+                }
+                               
+            });
+            
 //            addSubBehaviour(new SetStateBehaviour(this.myAgent, 1000));
         }
         
