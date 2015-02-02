@@ -80,43 +80,135 @@ public class Auctioneer extends BaseAgent {
             trafficLightsThatShouldBeGreen.add(trafficLightWithHighestCarCount);
             
             String locationDirection = trafficLightsMetadata.get(trafficLightWithHighestCarCount).get("location") + trafficLightsMetadata.get(trafficLightWithHighestCarCount).get("direction");
+
+            AID westToEastTrafficLight = trafficLightsByDirection.get("WE");
+            AID westToSouthTrafficLight = trafficLightsByDirection.get("WS");
+            AID southToWestTrafficLight  = trafficLightsByDirection.get("SW");
+            AID southToEastTrafficLight  = trafficLightsByDirection.get("SE");            
+            AID eastToWestTrafficLight  = trafficLightsByDirection.get("EW");
+            AID eastToSouthTrafficLight  = trafficLightsByDirection.get("ES");
+            
+            int westToEastCarCount = Integer.valueOf(trafficLightsMetadata.get(westToEastTrafficLight).get("carCount"));
+            int westToSouthCarCount = Integer.valueOf(trafficLightsMetadata.get(westToSouthTrafficLight).get("carCount"));
+            int southToWestCarCount = Integer.valueOf(trafficLightsMetadata.get(southToWestTrafficLight).get("carCount"));                    
+            int southToEastCarCount = Integer.valueOf(trafficLightsMetadata.get(southToEastTrafficLight).get("carCount"));            
+            int eastToWestCarCount = Integer.valueOf(trafficLightsMetadata.get(eastToWestTrafficLight).get("carCount"));
+            int eastToSouthCarCount = Integer.valueOf(trafficLightsMetadata.get(eastToSouthTrafficLight).get("carCount"));
             
             switch (locationDirection){
-                case ("SW"):
-                    trafficLightsThatShouldBeGreen.add(trafficLightsByDirection.get("SE"));
+                case "WS":                    
+                    if(westToEastCarCount > southToWestCarCount && westToEastCarCount > southToEastCarCount){
+                        trafficLightsThatShouldBeGreen.add(westToEastTrafficLight);//1
+                        trafficLightsThatShouldBeGreen.add(westToSouthTrafficLight);//1
+                        trafficLightsThatShouldBeGreen.add(eastToWestTrafficLight);//1
+                    }else if(westToEastCarCount < southToWestCarCount && southToEastCarCount < southToWestCarCount){
+                        trafficLightsThatShouldBeGreen.add(westToSouthTrafficLight);//4
+                        trafficLightsThatShouldBeGreen.add(southToEastTrafficLight);//4
+                        trafficLightsThatShouldBeGreen.add(southToWestTrafficLight);//4                     
+                    }else{
+                        if(westToEastCarCount > southToWestCarCount){
+                            trafficLightsThatShouldBeGreen.add(westToSouthTrafficLight);//2
+                            trafficLightsThatShouldBeGreen.add(southToEastTrafficLight);//2
+                            trafficLightsThatShouldBeGreen.add(eastToWestTrafficLight);//2
+                        }else{
+                            trafficLightsThatShouldBeGreen.add(westToSouthTrafficLight);//4
+                            trafficLightsThatShouldBeGreen.add(southToEastTrafficLight);//4
+                            trafficLightsThatShouldBeGreen.add(southToWestTrafficLight);//4
+                        }
+                    }
+                    
+                    break;
+                
+                case ("EW"):
+
+                    if(westToEastCarCount > southToEastCarCount && westToEastCarCount > westToSouthCarCount && westToEastCarCount > eastToSouthCarCount){
+                        trafficLightsThatShouldBeGreen.add(westToEastTrafficLight);//1
+                        trafficLightsThatShouldBeGreen.add(westToSouthTrafficLight);//1
+                        trafficLightsThatShouldBeGreen.add(eastToWestTrafficLight);//1
+                    }else if(eastToSouthCarCount > southToEastCarCount && eastToSouthCarCount > westToEastCarCount && eastToSouthCarCount > westToSouthCarCount){
+                        trafficLightsThatShouldBeGreen.add(southToEastTrafficLight);//3
+                        trafficLightsThatShouldBeGreen.add(eastToSouthTrafficLight);//3
+                        trafficLightsThatShouldBeGreen.add(eastToWestTrafficLight);//3
+                    }else if(southToEastCarCount > westToEastCarCount && southToEastCarCount > westToSouthCarCount && southToEastCarCount > eastToSouthCarCount){
+                        if(westToSouthCarCount > eastToSouthCarCount){
+                            trafficLightsThatShouldBeGreen.add(southToEastTrafficLight);//3
+                            trafficLightsThatShouldBeGreen.add(eastToSouthTrafficLight);//3
+                            trafficLightsThatShouldBeGreen.add(eastToWestTrafficLight);//3
+                        }else{
+                            trafficLightsThatShouldBeGreen.add(westToSouthTrafficLight);//2
+                            trafficLightsThatShouldBeGreen.add(southToEastTrafficLight);//2
+                            trafficLightsThatShouldBeGreen.add(eastToWestTrafficLight);//2
+                        }
+                    }else{
+                        if(westToEastCarCount > southToEastCarCount){
+                            trafficLightsThatShouldBeGreen.add(westToEastTrafficLight);//1
+                        trafficLightsThatShouldBeGreen.add(westToSouthTrafficLight);//1
+                        trafficLightsThatShouldBeGreen.add(eastToWestTrafficLight);//1
+                        }else{
+                            trafficLightsThatShouldBeGreen.add(westToSouthTrafficLight);//2
+                            trafficLightsThatShouldBeGreen.add(southToEastTrafficLight);//2
+                            trafficLightsThatShouldBeGreen.add(eastToWestTrafficLight);//2
+                        }
+                    }                    
+                    
+                    
                     break;
                     
                 case ("SE"):
-                    AID southToWestTrafficLight = trafficLightsByDirection.get("SW");
-                    AID eastToWestTrafficLight  = trafficLightsByDirection.get("EW");
+
+                    if(southToWestCarCount > westToSouthCarCount && southToWestCarCount > eastToWestCarCount && southToWestCarCount > eastToSouthCarCount){
+                        trafficLightsThatShouldBeGreen.add(westToEastTrafficLight);//1
+                        trafficLightsThatShouldBeGreen.add(westToSouthTrafficLight);//1
+                        trafficLightsThatShouldBeGreen.add(eastToWestTrafficLight);//1
+                    }else if(eastToSouthCarCount > westToSouthCarCount && eastToSouthCarCount > eastToWestCarCount && eastToSouthCarCount > southToWestCarCount){
+                        trafficLightsThatShouldBeGreen.add(southToEastTrafficLight);//3
+                        trafficLightsThatShouldBeGreen.add(eastToSouthTrafficLight);//3
+                        trafficLightsThatShouldBeGreen.add(eastToWestTrafficLight);//3
+                    }else if(westToSouthCarCount > eastToWestCarCount && westToSouthCarCount > eastToSouthCarCount && westToSouthCarCount > southToWestCarCount){
+                        if(southToWestCarCount > eastToWestCarCount){
+                            trafficLightsThatShouldBeGreen.add(westToSouthTrafficLight);//4
+                            trafficLightsThatShouldBeGreen.add(southToEastTrafficLight);//4
+                            trafficLightsThatShouldBeGreen.add(southToWestTrafficLight);//4
+                        }else{
+                            trafficLightsThatShouldBeGreen.add(westToSouthTrafficLight);//2
+                            trafficLightsThatShouldBeGreen.add(southToEastTrafficLight);//2
+                            trafficLightsThatShouldBeGreen.add(eastToWestTrafficLight);//2
+                        }
+                    }else{
+                        if(westToSouthCarCount > eastToSouthCarCount){
+                            trafficLightsThatShouldBeGreen.add(westToSouthTrafficLight);//2
+                            trafficLightsThatShouldBeGreen.add(southToEastTrafficLight);//2
+                            trafficLightsThatShouldBeGreen.add(eastToWestTrafficLight);//2
+                        }else{
+                            trafficLightsThatShouldBeGreen.add(westToSouthTrafficLight);//4
+                            trafficLightsThatShouldBeGreen.add(southToEastTrafficLight);//4
+                            trafficLightsThatShouldBeGreen.add(southToWestTrafficLight);//4
+                        }
+                    }                    
+                                        
+                    break;
+                                        
+                case ("SW"):
+                    trafficLightsThatShouldBeGreen.add(westToSouthTrafficLight);//4
+                    trafficLightsThatShouldBeGreen.add(southToEastTrafficLight);//4
+                    trafficLightsThatShouldBeGreen.add(southToWestTrafficLight);//4
                     
-                    int southToWestCarCount = Integer.valueOf(trafficLightsMetadata.get(southToWestTrafficLight).get("carCount"));
-                    int eastToWestCarCount = Integer.valueOf(trafficLightsMetadata.get(eastToWestTrafficLight).get("carCount"));
-                    if(southToWestCarCount > eastToWestCarCount){
-                        trafficLightsThatShouldBeGreen.add(southToWestTrafficLight);
-                    }
-                    else{
-                        trafficLightsThatShouldBeGreen.add(eastToWestTrafficLight);
-                    }
+                    break;
+                    
+                case ("ES"):
+                    trafficLightsThatShouldBeGreen.add(southToEastTrafficLight);//3
+                    trafficLightsThatShouldBeGreen.add(eastToSouthTrafficLight);//3
+                    trafficLightsThatShouldBeGreen.add(eastToWestTrafficLight);//3                    
+                    
                     break;
                     
                 case ("WE"):
-                    trafficLightsThatShouldBeGreen.add(trafficLightsByDirection.get("EW"));
+                    trafficLightsThatShouldBeGreen.add(westToEastTrafficLight);//1
+                    trafficLightsThatShouldBeGreen.add(westToSouthTrafficLight);//1
+                    trafficLightsThatShouldBeGreen.add(eastToWestTrafficLight);//1
+                    
                     break;
                     
-                case ("EW"):
-                    AID southToEastTrafficLight = trafficLightsByDirection.get("SE");
-                    AID westToEastTrafficLight  = trafficLightsByDirection.get("WE");
-                    
-                    int southToEastCarCount = Integer.valueOf(trafficLightsMetadata.get(southToEastTrafficLight).get("carCount"));
-                    int westToEastCarCount = Integer.valueOf(trafficLightsMetadata.get(westToEastTrafficLight).get("carCount"));
-                    if(southToEastCarCount > westToEastCarCount){
-                        trafficLightsThatShouldBeGreen.add(southToEastTrafficLight);
-                    }
-                    else{
-                        trafficLightsThatShouldBeGreen.add(westToEastTrafficLight);
-                    }
-                    break;  
                     
             }
             
