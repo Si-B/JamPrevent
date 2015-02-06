@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import messages.TrafficLightLocationAndDirection;
@@ -61,12 +62,62 @@ public class Auctioneer extends BaseAgent {
     }
 
     private class SetStateBehaviour extends OneShotBehaviour {
+        
+        private Random rand = new Random();
 
         public SetStateBehaviour() {           
         }
 
         @Override
         public void action() {
+            //setHighestWithPredefinedStates();
+            //setSingleHighest();
+            setRandom();
+        }
+        
+        public void setRandom(){
+            int totalLights = trafficLightAgents.size();
+
+            int randomNum = rand.nextInt(totalLights);
+            
+           AID randomlySelectedCar = trafficLightAgents.get(randomNum);
+           
+            long t = new Date().getTime();
+            Date nextUpdate = new Date(t + 1000);
+                      
+            for(AID trafficLight : trafficLightsMetadata.keySet()){
+                if(trafficLight == randomlySelectedCar){
+                    sendTrafficLightNewState(trafficLight, "green", nextUpdate);    
+                }                
+                else {
+                    sendTrafficLightNewState(trafficLight, "red", nextUpdate);    
+                }
+            }    
+        }
+        
+        public void setSingleHighest(){
+           AID trafficLightWithHighestCarCount = trafficLightAgents.get(0);
+            
+            for(AID trafficLight : trafficLightsMetadata.keySet()){
+                if(Integer.valueOf(trafficLightsMetadata.get(trafficLight).get("carCount")) > Integer.valueOf(trafficLightsMetadata.get(trafficLightWithHighestCarCount).get("carCount"))){
+                    trafficLightWithHighestCarCount = trafficLight;
+                }
+            }
+            
+            long t = new Date().getTime();
+            Date nextUpdate = new Date(t + 1000);
+                      
+            for(AID trafficLight : trafficLightsMetadata.keySet()){
+                if(trafficLight == trafficLightWithHighestCarCount){
+                    sendTrafficLightNewState(trafficLight, "green", nextUpdate);    
+                }                
+                else {
+                    sendTrafficLightNewState(trafficLight, "red", nextUpdate);    
+                }
+            }    
+        }
+        
+        public void setHighestWithPredefinedStates(){
             
             AID trafficLightWithHighestCarCount = trafficLightAgents.get(0);
             
