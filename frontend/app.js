@@ -23,6 +23,14 @@
   function updateImage(data){
     updateLights(data);
     colorHighest(data);
+    createStatistics(data);
+  }
+
+  function createStatistics(data){
+    var totalCars = Array.reduce(data, function(total, current){
+    return current.load + total;}, 0);
+    document.getElementById("totalCars").innerHTML = totalCars;
+
   }
 
 
