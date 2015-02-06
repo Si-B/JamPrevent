@@ -38,7 +38,7 @@
     var carCounts = $.map(data, function(d){return d.load});
     var highestCarCount = Array.max(carCounts);
     $.each(data, function(index, value){
-      var color = value.load === highestCarCount ? "yellow": "black";
+      var color = value.load === highestCarCount ? "orange": "black";
       document.getElementById(value.location + "2" + value.direction + "-load").style.fill = color;
     });
   }
