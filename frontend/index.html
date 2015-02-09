@@ -1,89 +1,185 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title></title>
-  
+<title></title>
 
-  <script src="./bower_components/jquery/dist/jquery.js" type="text/javascript" charset="utf-8"></script>
-  <script src="./app.js" type="text/javascript" charset="utf-8"></script>
-  <style>
-    line{
-      stroke-width: 2px;
-      stroke: black;
-    }
 
-    line.separator{
-      stroke-dasharray: 2px, 2px;
-    }
+<script src="./bower_components/jquery/dist/jquery.js" type="text/javascript" charset="utf-8"></script>
+<script src="./bower_components/lodash/lodash.js" ></script>
+<script src="./app.js" type="text/javascript" charset="utf-8"></script>
+<style>
+line{
+	stroke-width: 2px;
+	stroke: black;
+}
 
-    polyline{
-      stroke-width: 2px;
-      stroke: black;
-      fill:none;
-    }
+line.separator{
+	stroke-dasharray: 2px, 2px;
+}
 
-    .container{
-      margin: 40px;
-    }
+polyline{
+	stroke-width: 2px;
+	stroke: black;
+	fill:none;
+}
 
-    circle{
-      fill: gray;
-    }
+.container{
+	margin: 40px;
+}
 
-    text{
-      font-size: 30px;
-    }
+circle{
+	fill: gray;
+}
 
-    </style>
-  <meta charset="utf-8" />
+text{
+	font-size: 30px;
+}
+
+.crossing{
+width: 33%;
+float: left;
+}
+
+</style>
+<meta charset="utf-8" />
 </head>
 <body>
-  <header>
-    
-  </header>
-  <div class="container">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="100%" height="100%" viewBox="0 0  1099 561" preserveAspectRatio="xMidYMid meet" zoomAndPan="disable">
-<defs id="svgEditorDefs">
-    <line id="svgEditorLineDefs" style="stroke: black; fill: none; vector-effect: non-scaling-stroke; stroke-width: 1px;"/>
-    <polygon id="svgEditorPolygonDefs" style="stroke: black; fill: khaki; vector-effect: non-scaling-stroke; stroke-width: 1px;"/>
-</defs>
-<rect id="svgEditorBackground" x="0" y="0" width="1099" height="561" style="fill: none; stroke: none;"/>
+<div id="random" class=crossing>
+	<div class="container">
+		<svg xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="100%" height="100%" viewBox="0 0  1099 561" preserveAspectRatio="xMidYMid meet" zoomAndPan="disable">
+			<defs id="svgEditorDefs">
+			<line id="svgEditorLineDefs" style="stroke: black; fill: none; vector-effect: non-scaling-stroke; stroke-width: 1px;"/>
+			<polygon id="svgEditorPolygonDefs" style="stroke: black; fill: khaki; vector-effect: non-scaling-stroke; stroke-width: 1px;"/>
+			</defs>
+			<rect id="svgEditorBackground" x="0" y="0" width="1099" height="561" style="fill: none; stroke: none;"/>
 
-<line x1="0" y1="0" x2="1000" y2="0"/>
+			<line x1="0" y1="0" x2="1000" y2="0"/>
 
-<polyline points="000,300 350,300, 0350,600" />
-<polyline points="650,600 650,300, 1000,300" />
+			<polyline points="000,300 350,300, 0350,600" />
+			<polyline points="650,600 650,300, 1000,300" />
 
 
-<line x1="0" y1="150" x2="350" y2="150" class="separator"/>
-<line x1="650" y1="150" x2="1000" y2="150" class="separator"/>
+			<line x1="0" y1="150" x2="350" y2="150" class="separator"/>
+			<line x1="650" y1="150" x2="1000" y2="150" class="separator"/>
 
-<line x1="500" y1="300" x2="500" y2="600" class="separator"/>
+			<line x1="500" y1="300" x2="500" y2="600" class="separator"/>
 
-<circle id="e2w"cx="700" cy="38" stroke-width="1px" r="19.105" />
-<text id="e2w-load" x=750 y=50>0</text>
+			<circle class="e2w"cx="700" cy="38" stroke-width="1px" r="19.105" />
+			<text class="e2w-load" x=750 y=50>0</text>
 
-<circle id="e2s"cx="700" cy="112" stroke-width="1px" r="19.105" />
-<text x=690 y=120>↓</text>
-<text id="e2s-load" x=750 y=120>0</text>
+			<circle class="e2s"cx="700" cy="112" stroke-width="1px" r="19.105" />
+			<text x=690 y=120>↓</text>
+			<text class="e2s-load" x=750 y=120>0</text>
 
-<circle id="w2e"cx="300" cy="188" stroke-width="1px" r="19.105" />
-<text id="w2e-load" x=240 y=195>0</text>
+			<circle class="w2e"cx="300" cy="188" stroke-width="1px" r="19.105" />
+			<text class="w2e-load" x=240 y=195>0</text>
 
-<circle id="w2s"cx="300" cy="272" stroke-width="1px" r="19.105" />
-<text x=290 y=284>↓</text>
-<text id="w2s-load" x=240 y=280>0</text>
+			<circle class="w2s"cx="300" cy="272" stroke-width="1px" r="19.105" />
+			<text x=290 y=284>↓</text>
+			<text class="w2s-load" x=240 y=280>0</text>
 
-<circle id="s2w"cx="538" cy="350" stroke-width="1px" r="19.105" />
-<text x=525 y=360>←</text>
-<text id="s2w-load" x=530 y=410>0</text>
-<circle id="s2e"cx="612" cy="350" stroke-width="1px" r="19.105" />
-<text x=600 y=360>→</text>
-<text id="s2e-load" x=600 y=410>0</text>
-</svg>
+			<circle class="s2w"cx="538" cy="350" stroke-width="1px" r="19.105" />
+			<text x=525 y=360>←</text>
+			<text class="s2w-load" x=530 y=410>0</text>
+			<circle class="s2e"cx="612" cy="350" stroke-width="1px" r="19.105" />
+			<text x=600 y=360>→</text>
+			<text class="s2e-load" x=600 y=410>0</text>
+		</svg>
+	</div>
+	<h1> Zufällig </h1>
+	<p> Anzahl Autos gesamt: <span class='totalCars'></span> </p>
 </div>
-<h1> Statistik </h1>
-<p> Anzahl Autos gesamt: <span id='totalCars' /> </p>
+<div id="singleHighest" class=crossing>
+	<div class="container">
+		<svg xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="100%" height="100%" viewBox="0 0  1099 561" preserveAspectRatio="xMidYMid meet" zoomAndPan="disable">
+			<defs id="svgEditorDefs">
+			<line id="svgEditorLineDefs" style="stroke: black; fill: none; vector-effect: non-scaling-stroke; stroke-width: 1px;"/>
+			<polygon id="svgEditorPolygonDefs" style="stroke: black; fill: khaki; vector-effect: non-scaling-stroke; stroke-width: 1px;"/>
+			</defs>
+			<rect id="svgEditorBackground" x="0" y="0" width="1099" height="561" style="fill: none; stroke: none;"/>
+
+			<line x1="0" y1="0" x2="1000" y2="0"/>
+
+			<polyline points="000,300 350,300, 0350,600" />
+			<polyline points="650,600 650,300, 1000,300" />
+
+
+			<line x1="0" y1="150" x2="350" y2="150" class="separator"/>
+			<line x1="650" y1="150" x2="1000" y2="150" class="separator"/>
+
+			<line x1="500" y1="300" x2="500" y2="600" class="separator"/>
+
+			<circle class="e2w"cx="700" cy="38" stroke-width="1px" r="19.105" />
+			<text class="e2w-load" x=750 y=50>0</text>
+
+			<circle class="e2s"cx="700" cy="112" stroke-width="1px" r="19.105" />
+			<text x=690 y=120>↓</text>
+			<text class="e2s-load" x=750 y=120>0</text>
+
+			<circle class="w2e"cx="300" cy="188" stroke-width="1px" r="19.105" />
+			<text class="w2e-load" x=240 y=195>0</text>
+
+			<circle class="w2s"cx="300" cy="272" stroke-width="1px" r="19.105" />
+			<text x=290 y=284>↓</text>
+			<text class="w2s-load" x=240 y=280>0</text>
+
+			<circle class="s2w"cx="538" cy="350" stroke-width="1px" r="19.105" />
+			<text x=525 y=360>←</text>
+			<text class="s2w-load" x=530 y=410>0</text>
+			<circle class="s2e"cx="612" cy="350" stroke-width="1px" r="19.105" />
+			<text x=600 y=360>→</text>
+			<text class="s2e-load" x=600 y=410>0</text>
+		</svg>
+	</div>
+	<h1> Single Highest </h1>
+	<p> Anzahl Autos gesamt: <span class='totalCars'></span> </p>
+</div>
+
+<div id="predefined" class=crossing>
+	<div class="container">
+		<svg xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="100%" height="100%" viewBox="0 0  1099 561" preserveAspectRatio="xMidYMid meet" zoomAndPan="disable">
+			<defs id="svgEditorDefs">
+			<line id="svgEditorLineDefs" style="stroke: black; fill: none; vector-effect: non-scaling-stroke; stroke-width: 1px;"/>
+			<polygon id="svgEditorPolygonDefs" style="stroke: black; fill: khaki; vector-effect: non-scaling-stroke; stroke-width: 1px;"/>
+			</defs>
+			<rect id="svgEditorBackground" x="0" y="0" width="1099" height="561" style="fill: none; stroke: none;"/>
+
+			<line x1="0" y1="0" x2="1000" y2="0"/>
+
+			<polyline points="000,300 350,300, 0350,600" />
+			<polyline points="650,600 650,300, 1000,300" />
+
+
+			<line x1="0" y1="150" x2="350" y2="150" class="separator"/>
+			<line x1="650" y1="150" x2="1000" y2="150" class="separator"/>
+
+			<line x1="500" y1="300" x2="500" y2="600" class="separator"/>
+
+			<circle class="e2w"cx="700" cy="38" stroke-width="1px" r="19.105" />
+			<text class="e2w-load" x=750 y=50>0</text>
+
+			<circle class="e2s"cx="700" cy="112" stroke-width="1px" r="19.105" />
+			<text x=690 y=120>↓</text>
+			<text class="e2s-load" x=750 y=120>0</text>
+
+			<circle class="w2e"cx="300" cy="188" stroke-width="1px" r="19.105" />
+			<text class="w2e-load" x=240 y=195>0</text>
+
+			<circle class="w2s"cx="300" cy="272" stroke-width="1px" r="19.105" />
+			<text x=290 y=284>↓</text>
+			<text class="w2s-load" x=240 y=280>0</text>
+
+			<circle class="s2w"cx="538" cy="350" stroke-width="1px" r="19.105" />
+			<text x=525 y=360>←</text>
+			<text class="s2w-load" x=530 y=410>0</text>
+			<circle class="s2e"cx="612" cy="350" stroke-width="1px" r="19.105" />
+			<text x=600 y=360>→</text>
+			<text class="s2e-load" x=600 y=410>0</text>
+		</svg>
+	</div>
+	<h1> Predefined </h1>
+	<p> Anzahl Autos gesamt: <span class='totalCars'></span> </p>
+</div>
 
 </body>
 </html>

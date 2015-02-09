@@ -13,33 +13,46 @@
     $.getJSON("./state.json", updateImage);
   }
 
-  function updateLights(data){
+  function updateLights(data, selector){
+	  var random = document.getElementById(selector);
     $.each(data, function(index, value){
-      document.getElementById(value.location + "2" + value.direction).style.fill = value.state;
-      document.getElementById(value.location + "2" + value.direction + "-load").innerHTML = value.load;
+      random.getElementsByClassName(value.location + "2" + value.direction)[0].style.fill = value.state;
+      random.getElementsByClassName(value.location + "2" + value.direction + "-load")[0].innerHTML = value.load;
     });
   }
 
   function updateImage(data){
-    updateLights(data);
-    colorHighest(data);
-    createStatistics(data);
+	var sh = _.filter(data, function(d){return d.crossLocation === "SingleHeighest";});
+	var ra = _.filter(data, function(d){return d.crossLocation === "Predefined";});
+	var pr = _.filter(data, function(d){return d.crossLocation === "Random";});
+    updateLights(sh, "singleHighest");
+    colorHighest(sh, "singleHighest");
+    createStatistics(sh, "singleHighest");
+
+    updateLights(ra, "random");
+    colorHighest(ra, "random");
+    createStatistics(ra, "random");
+
+    updateLights(pr, "predefined");
+    colorHighest(pr, "predefined");
+    createStatistics(pr, "predefined");
   }
 
-  function createStatistics(data){
+  function createStatistics(data, selector){
+	  var random = document.getElementById(selector);
     var totalCars = Array.reduce(data, function(total, current){
     return current.load + total;}, 0);
-    document.getElementById("totalCars").innerHTML = totalCars;
-
+    random.getElementsByClassName("totalCars")[0].innerHTML = totalCars;
   }
 
 
-  function colorHighest(data){
+  function colorHighest(data, selector){
+	  var random = document.getElementById(selector);
     var carCounts = $.map(data, function(d){return d.load});
     var highestCarCount = Array.max(carCounts);
     $.each(data, function(index, value){
       var color = value.load === highestCarCount ? "orange": "black";
-      document.getElementById(value.location + "2" + value.direction + "-load").style.fill = color;
+      random.getElementsByClassName(value.location + "2" + value.direction + "-load")[0].style.fill = color;
     });
   }
 
