@@ -23,8 +23,8 @@
 
   function updateImage(data){
 	var sh = _.filter(data, function(d){return d.crossLocation === "SingleHeighest";});
-	var ra = _.filter(data, function(d){return d.crossLocation === "Predefined";});
-	var pr = _.filter(data, function(d){return d.crossLocation === "Random";});
+	var ra = _.filter(data, function(d){return d.crossLocation === "Random";});
+	var pr = _.filter(data, function(d){return d.crossLocation === "Predefined";});
     updateLights(sh, "singleHighest");
     colorHighest(sh, "singleHighest");
     createStatistics(sh, "singleHighest");
