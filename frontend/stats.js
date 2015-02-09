@@ -1,8 +1,22 @@
 (function () {
 	window.setInterval(function(){
 		$.getJSON("history.json", function(data){
-			console.log(data);
 			var grouped = _.groupBy(data, function(d){return d.index;});
+
+			var differences = _.mapValues(grouped, function(values){
+				var minLoad = _.min(values, function(d){return d.load;}).load;
+				var maxLoad = _.max(values, function(d){return d.load;}).load;
+				return  maxLoad - minLoad;
+			});
+
+			differences = _.map(differences, function(value, key){
+				return [parseInt(key), value];
+			});
+
+			$.plot("#differences", [differences]);
+
+			console.log(differences);
+
 			var sums = _.mapValues(grouped, function(values){
 				return _.reduce(values, function(total, current){
 					return total + current.load;
@@ -11,9 +25,6 @@
 			var data = _.map(sums, function(value, key){
 				return [parseInt(key), value];
 			})
-			console.log(grouped);
-			console.log(sums);
-			console.log(data);
 
 			$.plot("#plot", [data]);
 		});
