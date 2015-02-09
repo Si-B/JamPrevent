@@ -288,7 +288,7 @@ public class TrafficLight extends BaseAgent{
         this.trafficState = trafficState;
 
         if (trafficState.equalsIgnoreCase("green")) {
-            this.carCount = this.carCount - 3 > 0 ? this.carCount - 3 : 0;
+            this.carCount = this.carCount - 10 > 0 ? this.carCount - 10 : 0;
         }
     }
 

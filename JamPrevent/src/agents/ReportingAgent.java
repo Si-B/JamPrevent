@@ -38,12 +38,14 @@ import org.json.simple.JSONObject;
  * @author sib
  */
 public class ReportingAgent extends FindTrafficLightsAgent {
-    
+
     private final ArrayList<JSONObject> trafficLightStates = new ArrayList<>();
+    private final ArrayList<JSONObject> trafficLightStatesHistory = new ArrayList<>();
     private int requestIndex = 0;
     private int receivedAnswersPerIndex = 0;
     private String pathToDump;
     private File dumpFile;
+    private File dumpFileHistory;
 
     @Override
     protected void setup() {
@@ -54,6 +56,7 @@ public class ReportingAgent extends FindTrafficLightsAgent {
         if (arguments.length > 0) {
             pathToDump = arguments[0].toString();
             dumpFile = new File(pathToDump, "state.json");
+            dumpFileHistory = new File(pathToDump, "history.json");
         }
 
         //requesting known TrafficLights to dump their properies to me
@@ -61,6 +64,33 @@ public class ReportingAgent extends FindTrafficLightsAgent {
 
         //listening to messages of TrafficLights
         addBehaviour(new ReceiveMessagesBehaviour());
+
+        addBehaviour(new DumpTrafficLightHistory(this, 1000));
+    }
+
+    private class DumpTrafficLightHistory extends TickerBehaviour {
+
+        public DumpTrafficLightHistory(Agent a, long period) {
+            super(a, period);
+        }
+
+        @Override
+        protected void onTick() {
+            JSONArray outputValues = new JSONArray();
+
+            for (JSONObject currentTrafficLightState : trafficLightStatesHistory) {
+                outputValues.add(currentTrafficLightState);
+            }
+
+            try {
+                try (FileOutputStream file = new FileOutputStream(dumpFileHistory)) {
+                    file.write(outputValues.toJSONString().getBytes());
+                }
+            } catch (IOException ex) {
+                Logger.getLogger(ReportingAgent.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            trafficLightStatesHistory.clear();
+        }
     }
 
     private class HandleTrafficLightPropertiesInform extends OneShotBehaviour {
@@ -78,7 +108,7 @@ public class ReportingAgent extends FindTrafficLightsAgent {
             TrafficLightProperties tlp;
             try {
                 ContentElement content = getContentManager().extractContent(msg);
-                Concept action = ((Action)content).getAction();                
+                Concept action = ((Action) content).getAction();
                 tlp = (TrafficLightProperties) action;
 
                 if (tlp.getIndex() == requestIndex) {
@@ -87,7 +117,9 @@ public class ReportingAgent extends FindTrafficLightsAgent {
                     currentTrafficLight.put("direction", tlp.getDirection().toLowerCase());
                     currentTrafficLight.put("state", tlp.getTrafficState().toLowerCase());
                     currentTrafficLight.put("load", tlp.getCarCount());
+                    currentTrafficLight.put("index", requestIndex);
                     trafficLightStates.add(currentTrafficLight);
+                    trafficLightStatesHistory.add(currentTrafficLight);
                     receivedAnswersPerIndex++;
                 }
 
@@ -114,7 +146,7 @@ public class ReportingAgent extends FindTrafficLightsAgent {
                             requestIndex++;
                         }
                     });
-                }            
+                }
             } catch (Codec.CodecException ex) {
                 Logger.getLogger(ReportingAgent.class.getName()).log(Level.SEVERE, null, ex);
             } catch (OntologyException ex) {
@@ -137,7 +169,7 @@ public class ReportingAgent extends FindTrafficLightsAgent {
             }
             try {
                 ContentElement content = getContentManager().extractContent(msg);
-                Concept action = ((Action)content).getAction();
+                Concept action = ((Action) content).getAction();
 
                 switch (msg.getPerformative()) {
 
@@ -177,13 +209,13 @@ public class ReportingAgent extends FindTrafficLightsAgent {
             tlp.setIndex(requestIndex);
             jade.lang.acl.ACLMessage message = new jade.lang.acl.ACLMessage(
                     jade.lang.acl.ACLMessage.REQUEST);
-            
+
             message.setLanguage(codec.getName());
             message.setOntology(ontology.getName());
-            
+
             trafficLightAgents.stream().forEach((trafficLight) -> {
                 try {
-                    getContentManager().fillContent(message, new Action(trafficLight, tlp));                
+                    getContentManager().fillContent(message, new Action(trafficLight, tlp));
                     message.addReceiver(trafficLight);
                 } catch (Codec.CodecException ex) {
                     Logger.getLogger(ReportingAgent.class.getName()).log(Level.SEVERE, null, ex);
