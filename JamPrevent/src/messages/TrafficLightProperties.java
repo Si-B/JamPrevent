@@ -18,6 +18,7 @@ public class TrafficLightProperties implements Concept  {
     private String trafficState;
     private int carCount;
     private int index;
+    private String crossLocation;
 
     /**
      * @return the location
@@ -87,6 +88,20 @@ public class TrafficLightProperties implements Concept  {
      */
     public void setIndex(int index) {
         this.index = index;
+    }
+
+    /**
+     * @return the crossLocation
+     */
+    public String getCrossLocation() {
+        return crossLocation;
+    }
+
+    /**
+     * @param crossLocation the crossLocation to set
+     */
+    public void setCrossLocation(String crossLocation) {
+        this.crossLocation = crossLocation;
     }
 
 }

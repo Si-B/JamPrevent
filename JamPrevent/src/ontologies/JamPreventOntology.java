@@ -45,6 +45,7 @@ public class JamPreventOntology extends Ontology implements JamPreventVocabulary
          add(cs, TrafficLightLocationAndDirection.class);
          cs.add(TRAFFIC_LIGHT_LOCATION_AND_DIRECTION_DIRECTION, (PrimitiveSchema) getSchema(BasicOntology.STRING), ObjectSchema.OPTIONAL);
          cs.add(TRAFFIC_LIGHT_LOCATION_AND_DIRECTION_LOCATION, (PrimitiveSchema) getSchema(BasicOntology.STRING), ObjectSchema.OPTIONAL);         
+         cs.add(TRAFFIC_LIGHT_LOCATION_AND_DIRECTION_CROSSLOCATION, (PrimitiveSchema) getSchema(BasicOntology.STRING), ObjectSchema.OPTIONAL);         
 
          cs = new ConceptSchema(TRAFFIC_LIGHT_PROPERTIES);
          add(cs, TrafficLightProperties.class);
@@ -53,6 +54,7 @@ public class JamPreventOntology extends Ontology implements JamPreventVocabulary
          cs.add(TRAFFIC_LIGHT_PROPERTIES_LOCATION, (PrimitiveSchema) getSchema(BasicOntology.STRING), ObjectSchema.OPTIONAL);         
          cs.add(TRAFFIC_LIGHT_PROPERTIES_TRAFFICSTATE, (PrimitiveSchema) getSchema(BasicOntology.STRING), ObjectSchema.OPTIONAL);         
          cs.add(TRAFFIC_LIGHT_PROPERTIES_DIRECTION, (PrimitiveSchema) getSchema(BasicOntology.STRING), ObjectSchema.OPTIONAL);         
+         cs.add(TRAFFIC_LIGHT_PROPERTIES_CROSSLOCATION, (PrimitiveSchema) getSchema(BasicOntology.STRING), ObjectSchema.OPTIONAL);         
 
          cs =  new ConceptSchema(TRAFFIC_LIGHT_OFFER);         
          add(cs, TrafficLightOffer.class);
