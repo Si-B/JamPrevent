@@ -36,6 +36,7 @@ public class TrafficLight extends BaseAgent{
     private String trafficState = "";
     private int carCount = 0;
     private Date lastGreenTime;
+    private String crossLocation = "";
 
     @Override
     public void setup() {
@@ -46,10 +47,25 @@ public class TrafficLight extends BaseAgent{
         if (arguments.length > 0) {
             location = arguments[0].toString();
             direction = arguments[1].toString();
+            crossLocation = arguments[2].toString();
         }
         addBehaviour(new ReceiveMessagesBehaviour());
 
         registerAgent("TrafficLight-Service");
+    }
+
+    /**
+     * @return the crossLocation
+     */
+    public String getCrossLocation() {
+        return crossLocation;
+    }
+
+    /**
+     * @param crossLocation the crossLocation to set
+     */
+    public void setCrossLocation(String crossLocation) {
+        this.crossLocation = crossLocation;
     }
 
     private class HandleTrafficLightOfferCallForPropose extends OneShotBehaviour {
@@ -226,6 +242,7 @@ public class TrafficLight extends BaseAgent{
                 tlp.setDirection(getDirection());
                 tlp.setCarCount(getCarCount());
                 tlp.setTrafficState(getTrafficState());
+                tlp.setCrossLocation(getCrossLocation());
                 ACLMessage reply = msg.createReply();
                 
                 reply.setLanguage(codec.getName());
@@ -261,7 +278,7 @@ public class TrafficLight extends BaseAgent{
                 Concept action = ((Action)content).getAction();                
                 TrafficLightLocationAndDirection tllad = (TrafficLightLocationAndDirection) action;
                 
-                
+                tllad.setCrossLocation(getCrossLocation());
                 tllad.setLocation(getLocation());
                 tllad.setDirection(getDirection());                              
                 

@@ -89,7 +89,7 @@ public class ReportingAgent extends FindTrafficLightsAgent {
             } catch (IOException ex) {
                 Logger.getLogger(ReportingAgent.class.getName()).log(Level.SEVERE, null, ex);
             }
-            trafficLightStatesHistory.clear();
+//            trafficLightStatesHistory.clear();
         }
     }
 
@@ -118,6 +118,7 @@ public class ReportingAgent extends FindTrafficLightsAgent {
                     currentTrafficLight.put("state", tlp.getTrafficState().toLowerCase());
                     currentTrafficLight.put("load", tlp.getCarCount());
                     currentTrafficLight.put("index", requestIndex);
+                    currentTrafficLight.put("crossLocation", tlp.getCrossLocation());
                     trafficLightStates.add(currentTrafficLight);
                     trafficLightStatesHistory.add(currentTrafficLight);
                     receivedAnswersPerIndex++;

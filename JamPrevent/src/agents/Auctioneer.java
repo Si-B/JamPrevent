@@ -53,10 +53,18 @@ public class Auctioneer extends BaseAgent {
     private String lastDirection = "WE";
     private int requestIndex = 0;
     private int receivedAnswersPerIndex = 0;
+    private String crossLocation = "";
+    private String method = "";
     
     @Override
     public void setup() {
         super.setup();
+        Object[] arguments = getArguments();
+       
+        if (arguments.length > 0) {
+            crossLocation = arguments[0].toString();               
+        }
+        
         addBehaviour(new DefaultExecutionBehaviour());
         addBehaviour(new ReceiveMessagesBehaviour());
     }
@@ -70,9 +78,14 @@ public class Auctioneer extends BaseAgent {
 
         @Override
         public void action() {
-            //setHighestWithPredefinedStates();
-            //setSingleHighest();
-            setRandom();
+            if(crossLocation.equalsIgnoreCase("Random")){
+                setRandom();    
+            }
+            else if(crossLocation.equalsIgnoreCase("SingleHeighest")){                
+                setSingleHighest();
+            }else{
+                setHighestWithPredefinedStates();
+            }                               
         }
         
         public void setRandom(){
@@ -320,14 +333,17 @@ public class Auctioneer extends BaseAgent {
             message.setOntology(ontology.getName());
             tlo.setIndex(requestIndex);
             for(AID trafficLight :  trafficLightAgents){
-                try {
-                    getContentManager().fillContent(message, new Action(trafficLight, tlo));
-                    message.addReceiver(trafficLight);
-                } catch (Codec.CodecException ex) {
-                    Logger.getLogger(Auctioneer.class.getName()).log(Level.SEVERE, null, ex);
-                } catch (OntologyException ex) {
-                    Logger.getLogger(Auctioneer.class.getName()).log(Level.SEVERE, null, ex);
-                }
+                
+//                if(trafficLightsMetadata.get(trafficLight).get("crossLocation").equalsIgnoreCase(crossLocation)){                
+                    try {
+                        getContentManager().fillContent(message, new Action(trafficLight, tlo));
+                        message.addReceiver(trafficLight);
+                    } catch (Codec.CodecException ex) {
+                        Logger.getLogger(Auctioneer.class.getName()).log(Level.SEVERE, null, ex);
+                    } catch (OntologyException ex) {
+                        Logger.getLogger(Auctioneer.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+//                }
             }
             
             this.myAgent.send(message);
@@ -438,13 +454,16 @@ public class Auctioneer extends BaseAgent {
                 Concept action = ((Action) content).getAction();
                 tllad = (TrafficLightLocationAndDirection) action;
 
-                if (trafficLightsMetadata.containsKey(msg.getSender())) {
+                if (trafficLightsMetadata.containsKey(msg.getSender()) && crossLocation.equalsIgnoreCase(tllad.getCrossLocation())) {
                     trafficLightsMetadata.get(msg.getSender()).put("location", tllad.getLocation());
                     trafficLightsMetadata.get(msg.getSender()).put("direction", tllad.getDirection());
+//                    trafficLightsMetadata.get(msg.getSender()).put("crossLocation", tllad.getCrossLocation());
                     System.out.println(tllad.getLocation() + " " + tllad.getDirection());
-                }
-                
-                trafficLightsByDirection.put(tllad.getLocation() + tllad.getDirection(), msg.getSender());
+                    trafficLightsByDirection.put(tllad.getLocation() + tllad.getDirection(), msg.getSender());
+                }else{
+                    trafficLightsMetadata.remove(msg.getSender());
+                    trafficLightAgents.remove(msg.getSender());
+                }                               
 
                 ACLMessage reply = msg.createReply();
                 reply.setPerformative(ACLMessage.CONFIRM);

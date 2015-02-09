@@ -15,6 +15,7 @@ public class TrafficLightLocationAndDirection implements Concept  {
 
     private String location = "";
     private String direction = "";
+    private String crossLocation = "";
 
     /**
      * @return the location
@@ -42,5 +43,19 @@ public class TrafficLightLocationAndDirection implements Concept  {
      */
     public void setDirection(String direction) {
         this.direction = direction;
+    }
+
+    /**
+     * @return the crossLocation
+     */
+    public String getCrossLocation() {
+        return crossLocation;
+    }
+
+    /**
+     * @param crossLocation the crossLocation to set
+     */
+    public void setCrossLocation(String crossLocation) {
+        this.crossLocation = crossLocation;
     }
 }
