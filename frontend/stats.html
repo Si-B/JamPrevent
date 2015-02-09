@@ -6,17 +6,19 @@
 		<title></title>
 		<script src="./bower_components/jquery/dist/jquery.js"></script>
 		<script src="./bower_components/flot/jquery.flot.js"></script>
-<script src="./bower_components/lodash/lodash.js"></script>
-<script src="./stats.js"></script>
+		<script src="./bower_components/lodash/lodash.js"></script>
+		<script src="./stats.js"></script>
 
 		<style type="text/css" media="screen">
-#plot{
-width: 600px;
-height: 600px;
-}
+			.plot{
+				width: 50%;
+				height: 600px;
+				float: left;
+			}
 		</style>
 	</head>
 	<body>
-	<div id="plot"> </div>
+	<div id="plot" class="plot"></div>
+	<div id="differences" class="plot"></div>
 	</body>
 </html>
