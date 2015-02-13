@@ -25,6 +25,7 @@
 	var sh = _.filter(data, function(d){return d.crossLocation === "SingleHeighest";});
 	var ra = _.filter(data, function(d){return d.crossLocation === "Random";});
 	var pr = _.filter(data, function(d){return d.crossLocation === "Predefined";});
+	var rp = _.filter(data, function(d){return d.crossLocation === "RandomPredefined";});
     updateLights(sh, "singleHighest");
     colorHighest(sh, "singleHighest");
     createStatistics(sh, "singleHighest");
@@ -36,6 +37,10 @@
     updateLights(pr, "predefined");
     colorHighest(pr, "predefined");
     createStatistics(pr, "predefined");
+
+    updateLights(pr, "randomPredefined");
+    colorHighest(pr, "randomPredefined");
+    createStatistics(pr, "randomPredefined");
   }
 
   function createStatistics(data, selector){
