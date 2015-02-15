@@ -8,6 +8,13 @@
 <script src="./bower_components/lodash/lodash.js" ></script>
 <script src="./app.js" type="text/javascript" charset="utf-8"></script>
 <style>
+* {
+	box-sizing: border-box;
+}
+
+html, body{
+	height: 100%;
+}
 line{
 	stroke-width: 2px;
 	stroke: black;
@@ -24,7 +31,8 @@ polyline{
 }
 
 .container{
-	margin: 40px;
+	height: 80%;
+	float: left;
 }
 
 circle{
@@ -36,6 +44,7 @@ text{
 }
 
 .crossing{
+	height: 80%; 
 width: 50%;
 float: left;
 }
@@ -43,6 +52,7 @@ float: left;
 .fullwidth{
 	width: 100%;
 	float: left;
+	height: 50%;
 }
 
 
