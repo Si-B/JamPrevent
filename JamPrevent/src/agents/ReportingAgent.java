@@ -22,9 +22,13 @@ import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
+import jade.lang.acl.MessageTemplate;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -60,7 +64,7 @@ public class ReportingAgent extends FindTrafficLightsAgent {
         }
 
         //requesting known TrafficLights to dump their properies to me
-        addBehaviour(new RequestTrafficLightsToDumpPropertiesBehaviour(this, 100));
+        addBehaviour(new RequestTrafficLightsToDumpPropertiesBehaviour(this, 50));
 
         //listening to messages of TrafficLights
         addBehaviour(new ReceiveMessagesBehaviour());
@@ -82,6 +86,12 @@ public class ReportingAgent extends FindTrafficLightsAgent {
                 outputValues.add(currentTrafficLightState);
             }
 
+//            try(PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(dumpFileHistory, false)))) {
+//                out.println(outputValues.toJSONString());
+//            }catch (IOException e) {
+//                //exception handling left as an exercise for the reader
+//            }            
+            
             try {
                 try (FileOutputStream file = new FileOutputStream(dumpFileHistory)) {
                     file.write(outputValues.toJSONString().getBytes());
@@ -162,8 +172,8 @@ public class ReportingAgent extends FindTrafficLightsAgent {
 
         @Override
         public void action() {
-
-            ACLMessage msg = receive();
+            MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.PROPAGATE);
+            ACLMessage msg = receive(mt);
             if (msg == null) {
                 block();
                 return;
@@ -174,9 +184,9 @@ public class ReportingAgent extends FindTrafficLightsAgent {
 
                 switch (msg.getPerformative()) {
 
-                    case (ACLMessage.INFORM):
+                    case (ACLMessage.PROPAGATE):
 
-                        System.out.println("Request from " + msg.getSender().getLocalName());
+//                        System.out.println("Request from " + msg.getSender().getLocalName());
 
                         if (action instanceof TrafficLightProperties) {
                             addBehaviour(new HandleTrafficLightPropertiesInform(myAgent, msg));

@@ -56,12 +56,25 @@ public class LoadSimulatorAgent extends FindTrafficLightsAgent {
 
             @Override
             public void onTick() {
+//                int cars = getPoissonRandom(5);
                 for (AID trafficLight : trafficLightAgents) {
-                    sendTrafficLightAdditionalCars(trafficLight, randInt(0, 5));
+                    sendTrafficLightAdditionalCars(trafficLight, randInt(0, 10));
                 }
             }
         }
 
+        private int getPoissonRandom(double mean) {
+            Random r = new Random();
+            double L = Math.exp(-mean);
+            int k = 0;
+            double p = 1.0;
+            do {
+                p = p * r.nextDouble();
+                k++;
+            } while (p > L);
+            return k - 1;
+        }        
+        
         private void sendTrafficLightAdditionalCars(AID trafficLight, int count) {
 
             try {
