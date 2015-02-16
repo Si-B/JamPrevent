@@ -11,10 +11,9 @@ import jade.content.lang.Codec;
 import jade.content.onto.OntologyException;
 import jade.content.onto.basic.Action;
 import jade.core.Agent;
-import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.OneShotBehaviour;
-import jade.core.behaviours.WakerBehaviour;
+import jade.core.behaviours.TickerBehaviour;
 import jade.domain.FIPAAgentManagement.FailureException;
 import jade.domain.FIPAAgentManagement.NotUnderstoodException;
 import jade.domain.FIPAAgentManagement.RefuseException;
@@ -29,7 +28,6 @@ import messages.TrafficLightLoadSimulation;
 import messages.TrafficLightLocationAndDirection;
 import messages.TrafficLightOffer;
 import messages.TrafficLightProperties;
-import messages.TrafficLightState;
 
 /**
  *
@@ -43,6 +41,7 @@ public class TrafficLight extends BaseAgent {
     private String trafficState = "";
     private int carCount = 0;
     private Date lastGreenTime;
+    private Date lastCallForProposalReplyTime = new Date();
     private String crossLocation = "";
 
     @Override
@@ -56,6 +55,17 @@ public class TrafficLight extends BaseAgent {
             direction = arguments[1].toString();
             crossLocation = arguments[2].toString();
         }
+        
+        addBehaviour(new TickerBehaviour(this, 1000) {
+            
+            @Override
+            protected void onTick() {
+                if(System.currentTimeMillis() - lastCallForProposalReplyTime.getTime() > 1000){
+                    setTrafficState("yellow");
+                }
+            }
+        });
+        
         MessageTemplate template = MessageTemplate.and(
                 MessageTemplate.MatchProtocol(FIPANames.InteractionProtocol.FIPA_CONTRACT_NET),
                 MessageTemplate.MatchPerformative(ACLMessage.CFP));
@@ -76,8 +86,8 @@ public class TrafficLight extends BaseAgent {
                     reply.setPerformative(ACLMessage.PROPOSE);
 
                     getContentManager().fillContent(reply, new Action(cfp.getSender(), tlo));
-                    System.out.println("Agent " + getLocalName() + ": Proposing " + carCount);
-
+                    System.out.println("Agent " + getLocalName() + ": Proposing " + carCount);                    
+                    
                     return reply;
                 } catch (Codec.CodecException ex) {
                     Logger.getLogger(TrafficLight.class.getName()).log(Level.SEVERE, null, ex);
@@ -85,8 +95,8 @@ public class TrafficLight extends BaseAgent {
                     Logger.getLogger(TrafficLight.class.getName()).log(Level.SEVERE, null, ex);
                 }
                 return null;
-            }
-
+            }            
+            
             @Override
             protected ACLMessage prepareResultNotification(ACLMessage cfp, ACLMessage propose, ACLMessage accept) throws FailureException {
                 System.out.println("Agent " + getLocalName() + ": Proposal accepted");
@@ -95,12 +105,13 @@ public class TrafficLight extends BaseAgent {
                 ACLMessage inform = accept.createReply();
                 inform.setPerformative(ACLMessage.INFORM);
                 return inform;
-            }                    
-
+            }                                
+                                    
             @Override
             protected void handleRejectProposal(ACLMessage cfp, ACLMessage propose, ACLMessage reject) {
                 System.out.println("Agent " + getLocalName() + ": Proposal rejected");
                 setTrafficState("red");
+                lastCallForProposalReplyTime = new Date();
             }
 
             @Override
@@ -108,11 +119,13 @@ public class TrafficLight extends BaseAgent {
                 setTrafficState("green");
                 ACLMessage reply = accept.createReply();
                 reply.setPerformative(ACLMessage.INFORM);
+                lastCallForProposalReplyTime = new Date();
                 return reply;
             }
 
         });
-
+     
+        
         addBehaviour(new ReceiveMessagesBehaviour());
 
         registerAgent("TrafficLight-Service");
@@ -153,7 +166,6 @@ public class TrafficLight extends BaseAgent {
                 reply.setPerformative(ACLMessage.CONFIRM);
 
                 send(reply);
-//                System.out.println("TrafficLightProperties sent!");
             } catch (Codec.CodecException ex) {
                 Logger.getLogger(TrafficLight.class.getName()).log(Level.SEVERE, null, ex);
             } catch (OntologyException ex) {
@@ -168,13 +180,10 @@ public class TrafficLight extends BaseAgent {
 
         @Override
         public void action() {
-
-            MessageTemplate mt
-                    = MessageTemplate.or(
-                            MessageTemplate.MatchPerformative(ACLMessage.PROPOSE), MessageTemplate.MatchPerformative(ACLMessage.REQUEST));
-
+            MessageTemplate mt = MessageTemplate.or(MessageTemplate.MatchPerformative(ACLMessage.PROPOSE), MessageTemplate.MatchPerformative(ACLMessage.REQUEST));
+                                                        
             ACLMessage msg = receive(mt);
-            if (msg == null) {
+            if (msg == null) {                                
                 block();
                 return;
             }
@@ -185,8 +194,6 @@ public class TrafficLight extends BaseAgent {
                 switch (msg.getPerformative()) {
 
                     case (ACLMessage.REQUEST):
-
-//                        System.out.println("Request from " + msg.getSender().getLocalName());
                         if (action instanceof TrafficLightLocationAndDirection) {
                             addBehaviour(new HandleTrafficLightLocationAndDirectionRequest(myAgent, msg));
                         } else if (action instanceof TrafficLightProperties) {
@@ -197,54 +204,11 @@ public class TrafficLight extends BaseAgent {
                         break;
 
                     case (ACLMessage.PROPOSE):
-                        if (action instanceof TrafficLightState) {
-                            addBehaviour(new HandleTrafficLightStatePropose(myAgent, msg));
-                        } else if (action instanceof TrafficLightLoadSimulation) {
+                        if (action instanceof TrafficLightLoadSimulation) {
                             addBehaviour(new HandleTrafficLightLoadSimulationPropose(myAgent, msg));
                         }
-                        break;
                 }
             } catch (Exception ex) {
-            }
-        }
-    }
-
-    private class HandleTrafficLightStatePropose extends OneShotBehaviour {
-
-        private final ACLMessage msg;
-
-        public HandleTrafficLightStatePropose(Agent myAgent, ACLMessage msg) {
-            super(myAgent);
-            this.msg = msg;
-        }
-
-        @Override
-        public void action() {
-            try {
-                TrafficLightState tlp;
-
-                ContentElement content = getContentManager().extractContent(msg);
-                Concept action = ((Action) content).getAction();
-                tlp = (TrafficLightState) action;
-
-                addBehaviour(new WakerBehaviour(myAgent, tlp.getNextUpdate()) {
-
-                    @Override
-                    protected void onWake() {
-                        super.onWake();
-                        setTrafficState(tlp.getTrafficState());
-                    }
-                });
-
-                ACLMessage reply = msg.createReply();
-
-                reply.setPerformative(ACLMessage.CONFIRM);
-                send(reply);
-//                System.out.println("TrafficLightState received!");
-            } catch (Codec.CodecException ex) {
-                Logger.getLogger(TrafficLight.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (OntologyException ex) {
-                Logger.getLogger(TrafficLight.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
     }

@@ -10,27 +10,16 @@ import jade.content.ContentElement;
 import jade.content.lang.Codec;
 import jade.content.onto.OntologyException;
 import jade.content.onto.basic.Action;
-import jade.core.AID;
 import jade.core.Agent;
-import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.OneShotBehaviour;
 import jade.core.behaviours.TickerBehaviour;
-import jade.core.behaviours.WakerBehaviour;
-import jade.domain.DFService;
-import jade.domain.FIPAAgentManagement.DFAgentDescription;
-import jade.domain.FIPAAgentManagement.ServiceDescription;
-import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import messages.TrafficLightProperties;
@@ -85,12 +74,6 @@ public class ReportingAgent extends FindTrafficLightsAgent {
             for (JSONObject currentTrafficLightState : trafficLightStatesHistory) {
                 outputValues.add(currentTrafficLightState);
             }
-
-//            try(PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(dumpFileHistory, false)))) {
-//                out.println(outputValues.toJSONString());
-//            }catch (IOException e) {
-//                //exception handling left as an exercise for the reader
-//            }            
             
             try {
                 try (FileOutputStream file = new FileOutputStream(dumpFileHistory)) {
@@ -99,7 +82,6 @@ public class ReportingAgent extends FindTrafficLightsAgent {
             } catch (IOException ex) {
                 Logger.getLogger(ReportingAgent.class.getName()).log(Level.SEVERE, null, ex);
             }
-//            trafficLightStatesHistory.clear();
         }
     }
 
@@ -185,9 +167,6 @@ public class ReportingAgent extends FindTrafficLightsAgent {
                 switch (msg.getPerformative()) {
 
                     case (ACLMessage.PROPAGATE):
-
-//                        System.out.println("Request from " + msg.getSender().getLocalName());
-
                         if (action instanceof TrafficLightProperties) {
                             addBehaviour(new HandleTrafficLightPropertiesInform(myAgent, msg));
                         } else {
