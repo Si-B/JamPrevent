@@ -39,7 +39,6 @@ public class JamPreventOntology extends Ontology implements JamPreventVocabulary
       super(ONTOLOGY_NAME, BasicOntology.getInstance());
 
       try {
-
          // ------- Add Concepts
          ConceptSchema cs = new ConceptSchema(TRAFFIC_LIGHT_LOCATION_AND_DIRECTION);
          add(cs, TrafficLightLocationAndDirection.class);
@@ -74,6 +73,5 @@ public class JamPreventOntology extends Ontology implements JamPreventVocabulary
       }
       catch (OntologyException oe) {
       }
-   }   
-   
+   }      
 }

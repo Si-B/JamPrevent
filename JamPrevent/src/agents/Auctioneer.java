@@ -12,7 +12,6 @@ import jade.content.onto.OntologyException;
 import jade.content.onto.basic.Action;
 import jade.core.AID;
 import jade.core.Agent;
-import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.OneShotBehaviour;
 import jade.core.behaviours.SequentialBehaviour;
@@ -23,23 +22,23 @@ import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
+import jade.domain.FIPANames;
 import jade.lang.acl.ACLMessage;
-import jade.lang.acl.UnreadableException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import jade.lang.acl.MessageTemplate;
+import jade.proto.ContractNetInitiator;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
+import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import messages.TrafficLightLocationAndDirection;
 import messages.TrafficLightOffer;
 import messages.TrafficLightProperties;
 import messages.TrafficLightState;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
 
 /**
  *
@@ -55,33 +54,32 @@ public class Auctioneer extends BaseAgent {
     private int receivedAnswersPerIndex = 0;
     private String crossLocation = "";
     private String method = "";
-    
+
     @Override
     public void setup() {
         super.setup();
         Object[] arguments = getArguments();
-       
+
         if (arguments.length > 0) {
-            crossLocation = arguments[0].toString();               
+            crossLocation = arguments[0].toString();
         }
-        
+
         addBehaviour(new DefaultExecutionBehaviour());
         addBehaviour(new ReceiveMessagesBehaviour());
     }
 
     private class SetStateBehaviour extends OneShotBehaviour {
-        
+
         private Random rand = new Random();
 
-        public SetStateBehaviour() {           
+        public SetStateBehaviour() {
         }
 
         @Override
         public void action() {
-            if(crossLocation.equalsIgnoreCase("Random")){
-                setRandom();    
-            }
-            else if(crossLocation.equalsIgnoreCase("SingleHeighest")){                
+            if (crossLocation.equalsIgnoreCase("Random")) {
+                setRandom();
+            } else if (crossLocation.equalsIgnoreCase("SingleHeighest")) {
                 setSingleHighest();
             }
             else if(crossLocation.equalsIgnoreCase("RandomPredefined")){                
@@ -89,209 +87,203 @@ public class Auctioneer extends BaseAgent {
             }
             else{
                 setHighestWithPredefinedStates();
-            }                               
+            }
         }
-        
-        public void setRandom(){
+
+        public void setRandom() {
             int totalLights = trafficLightAgents.size();
 
             int randomNum = rand.nextInt(totalLights);
-            
-           AID randomlySelectedCar = trafficLightAgents.get(randomNum);
-           
+
+            AID randomlySelectedCar = trafficLightAgents.get(randomNum);
+
             long t = new Date().getTime();
             Date nextUpdate = new Date(t + 1000);
-                      
-            for(AID trafficLight : trafficLightsMetadata.keySet()){
-                if(trafficLight == randomlySelectedCar){
-                    sendTrafficLightNewState(trafficLight, "green", nextUpdate);    
-                }                
-                else {
-                    sendTrafficLightNewState(trafficLight, "red", nextUpdate);    
-                }
-            }    
-        }
-        
-        public void setSingleHighest(){
-           AID trafficLightWithHighestCarCount = trafficLightAgents.get(0);
-            
-            for(AID trafficLight : trafficLightsMetadata.keySet()){
-                if(Integer.valueOf(trafficLightsMetadata.get(trafficLight).get("carCount")) > Integer.valueOf(trafficLightsMetadata.get(trafficLightWithHighestCarCount).get("carCount"))){
-                    trafficLightWithHighestCarCount = trafficLight;
+
+            for (AID trafficLight : trafficLightsMetadata.keySet()) {
+                if (trafficLight == randomlySelectedCar) {
+                    sendTrafficLightNewState(trafficLight, "green", nextUpdate);
+                } else {
+                    sendTrafficLightNewState(trafficLight, "red", nextUpdate);
                 }
             }
-            
-            long t = new Date().getTime();
-            Date nextUpdate = new Date(t + 1000);
-                      
-            for(AID trafficLight : trafficLightsMetadata.keySet()){
-                if(trafficLight == trafficLightWithHighestCarCount){
-                    sendTrafficLightNewState(trafficLight, "green", nextUpdate);    
-                }                
-                else {
-                    sendTrafficLightNewState(trafficLight, "red", nextUpdate);    
-                }
-            }    
         }
-        
-        public void setHighestWithPredefinedStates(){
-            
+
+        public void setSingleHighest() {
             AID trafficLightWithHighestCarCount = trafficLightAgents.get(0);
-            
-            for(AID trafficLight : trafficLightsMetadata.keySet()){
-                if(Integer.valueOf(trafficLightsMetadata.get(trafficLight).get("carCount")) > Integer.valueOf(trafficLightsMetadata.get(trafficLightWithHighestCarCount).get("carCount"))){
+
+            for (AID trafficLight : trafficLightsMetadata.keySet()) {
+                if (Integer.valueOf(trafficLightsMetadata.get(trafficLight).get("carCount")) > Integer.valueOf(trafficLightsMetadata.get(trafficLightWithHighestCarCount).get("carCount"))) {
                     trafficLightWithHighestCarCount = trafficLight;
                 }
             }
-            
+
+            long t = new Date().getTime();
+            Date nextUpdate = new Date(t + 1000);
+
+            for (AID trafficLight : trafficLightsMetadata.keySet()) {
+                if (trafficLight == trafficLightWithHighestCarCount) {
+                    sendTrafficLightNewState(trafficLight, "green", nextUpdate);
+                } else {
+                    sendTrafficLightNewState(trafficLight, "red", nextUpdate);
+                }
+            }
+        }
+
+        public void setHighestWithPredefinedStates() {
+
+            AID trafficLightWithHighestCarCount = trafficLightAgents.get(0);
+
+            for (AID trafficLight : trafficLightsMetadata.keySet()) {
+                if (Integer.valueOf(trafficLightsMetadata.get(trafficLight).get("carCount")) > Integer.valueOf(trafficLightsMetadata.get(trafficLightWithHighestCarCount).get("carCount"))) {
+                    trafficLightWithHighestCarCount = trafficLight;
+                }
+            }
+
             List<AID> trafficLightsThatShouldBeGreen = new ArrayList<AID>();
             trafficLightsThatShouldBeGreen.add(trafficLightWithHighestCarCount);
-            
+
             String locationDirection = trafficLightsMetadata.get(trafficLightWithHighestCarCount).get("location") + trafficLightsMetadata.get(trafficLightWithHighestCarCount).get("direction");
 
             AID westToEastTrafficLight = trafficLightsByDirection.get("WE");
             AID westToSouthTrafficLight = trafficLightsByDirection.get("WS");
-            AID southToWestTrafficLight  = trafficLightsByDirection.get("SW");
-            AID southToEastTrafficLight  = trafficLightsByDirection.get("SE");            
-            AID eastToWestTrafficLight  = trafficLightsByDirection.get("EW");
-            AID eastToSouthTrafficLight  = trafficLightsByDirection.get("ES");
-            
+            AID southToWestTrafficLight = trafficLightsByDirection.get("SW");
+            AID southToEastTrafficLight = trafficLightsByDirection.get("SE");
+            AID eastToWestTrafficLight = trafficLightsByDirection.get("EW");
+            AID eastToSouthTrafficLight = trafficLightsByDirection.get("ES");
+
             int westToEastCarCount = Integer.valueOf(trafficLightsMetadata.get(westToEastTrafficLight).get("carCount"));
             int westToSouthCarCount = Integer.valueOf(trafficLightsMetadata.get(westToSouthTrafficLight).get("carCount"));
-            int southToWestCarCount = Integer.valueOf(trafficLightsMetadata.get(southToWestTrafficLight).get("carCount"));                    
-            int southToEastCarCount = Integer.valueOf(trafficLightsMetadata.get(southToEastTrafficLight).get("carCount"));            
+            int southToWestCarCount = Integer.valueOf(trafficLightsMetadata.get(southToWestTrafficLight).get("carCount"));
+            int southToEastCarCount = Integer.valueOf(trafficLightsMetadata.get(southToEastTrafficLight).get("carCount"));
             int eastToWestCarCount = Integer.valueOf(trafficLightsMetadata.get(eastToWestTrafficLight).get("carCount"));
             int eastToSouthCarCount = Integer.valueOf(trafficLightsMetadata.get(eastToSouthTrafficLight).get("carCount"));
-            
-            switch (locationDirection){
-                case "WS":                    
-                    if(westToEastCarCount > southToWestCarCount && westToEastCarCount > southToEastCarCount){
+
+            switch (locationDirection) {
+                case "WS":
+                    if (westToEastCarCount > southToWestCarCount && westToEastCarCount > southToEastCarCount) {
                         trafficLightsThatShouldBeGreen.add(westToEastTrafficLight);//1
                         trafficLightsThatShouldBeGreen.add(westToSouthTrafficLight);//1
                         trafficLightsThatShouldBeGreen.add(eastToWestTrafficLight);//1
-                    }else if(westToEastCarCount < southToWestCarCount && southToEastCarCount < southToWestCarCount){
+                    } else if (westToEastCarCount < southToWestCarCount && southToEastCarCount < southToWestCarCount) {
                         trafficLightsThatShouldBeGreen.add(westToSouthTrafficLight);//4
                         trafficLightsThatShouldBeGreen.add(southToEastTrafficLight);//4
                         trafficLightsThatShouldBeGreen.add(southToWestTrafficLight);//4                     
-                    }else{
-                        if(westToEastCarCount > southToWestCarCount){
+                    } else {
+                        if (westToEastCarCount > southToWestCarCount) {
                             trafficLightsThatShouldBeGreen.add(westToSouthTrafficLight);//2
                             trafficLightsThatShouldBeGreen.add(southToEastTrafficLight);//2
                             trafficLightsThatShouldBeGreen.add(eastToWestTrafficLight);//2
-                        }else{
+                        } else {
                             trafficLightsThatShouldBeGreen.add(westToSouthTrafficLight);//4
                             trafficLightsThatShouldBeGreen.add(southToEastTrafficLight);//4
                             trafficLightsThatShouldBeGreen.add(southToWestTrafficLight);//4
                         }
                     }
-                    
+
                     break;
-                
+
                 case ("EW"):
 
-                    if(westToEastCarCount > southToEastCarCount && westToEastCarCount > westToSouthCarCount && westToEastCarCount > eastToSouthCarCount){
+                    if (westToEastCarCount > southToEastCarCount && westToEastCarCount > westToSouthCarCount && westToEastCarCount > eastToSouthCarCount) {
                         trafficLightsThatShouldBeGreen.add(westToEastTrafficLight);//1
                         trafficLightsThatShouldBeGreen.add(westToSouthTrafficLight);//1
                         trafficLightsThatShouldBeGreen.add(eastToWestTrafficLight);//1
-                    }else if(eastToSouthCarCount > southToEastCarCount && eastToSouthCarCount > westToEastCarCount && eastToSouthCarCount > westToSouthCarCount){
+                    } else if (eastToSouthCarCount > southToEastCarCount && eastToSouthCarCount > westToEastCarCount && eastToSouthCarCount > westToSouthCarCount) {
                         trafficLightsThatShouldBeGreen.add(southToEastTrafficLight);//3
                         trafficLightsThatShouldBeGreen.add(eastToSouthTrafficLight);//3
                         trafficLightsThatShouldBeGreen.add(eastToWestTrafficLight);//3
-                    }else if(southToEastCarCount > westToEastCarCount && southToEastCarCount > westToSouthCarCount && southToEastCarCount > eastToSouthCarCount){
-                        if(westToSouthCarCount > eastToSouthCarCount){
+                    } else if (southToEastCarCount > westToEastCarCount && southToEastCarCount > westToSouthCarCount && southToEastCarCount > eastToSouthCarCount) {
+                        if (westToSouthCarCount > eastToSouthCarCount) {
                             trafficLightsThatShouldBeGreen.add(southToEastTrafficLight);//3
                             trafficLightsThatShouldBeGreen.add(eastToSouthTrafficLight);//3
                             trafficLightsThatShouldBeGreen.add(eastToWestTrafficLight);//3
-                        }else{
+                        } else {
                             trafficLightsThatShouldBeGreen.add(westToSouthTrafficLight);//2
                             trafficLightsThatShouldBeGreen.add(southToEastTrafficLight);//2
                             trafficLightsThatShouldBeGreen.add(eastToWestTrafficLight);//2
                         }
-                    }else{
-                        if(westToEastCarCount > southToEastCarCount){
+                    } else {
+                        if (westToEastCarCount > southToEastCarCount) {
                             trafficLightsThatShouldBeGreen.add(westToEastTrafficLight);//1
-                        trafficLightsThatShouldBeGreen.add(westToSouthTrafficLight);//1
-                        trafficLightsThatShouldBeGreen.add(eastToWestTrafficLight);//1
-                        }else{
+                            trafficLightsThatShouldBeGreen.add(westToSouthTrafficLight);//1
+                            trafficLightsThatShouldBeGreen.add(eastToWestTrafficLight);//1
+                        } else {
                             trafficLightsThatShouldBeGreen.add(westToSouthTrafficLight);//2
                             trafficLightsThatShouldBeGreen.add(southToEastTrafficLight);//2
                             trafficLightsThatShouldBeGreen.add(eastToWestTrafficLight);//2
                         }
-                    }                    
-                    
-                    
+                    }
+
                     break;
-                    
+
                 case ("SE"):
 
-                    if(southToWestCarCount > westToSouthCarCount && southToWestCarCount > eastToWestCarCount && southToWestCarCount > eastToSouthCarCount){
+                    if (southToWestCarCount > westToSouthCarCount && southToWestCarCount > eastToWestCarCount && southToWestCarCount > eastToSouthCarCount) {
                         trafficLightsThatShouldBeGreen.add(westToEastTrafficLight);//1
                         trafficLightsThatShouldBeGreen.add(westToSouthTrafficLight);//1
                         trafficLightsThatShouldBeGreen.add(eastToWestTrafficLight);//1
-                    }else if(eastToSouthCarCount > westToSouthCarCount && eastToSouthCarCount > eastToWestCarCount && eastToSouthCarCount > southToWestCarCount){
+                    } else if (eastToSouthCarCount > westToSouthCarCount && eastToSouthCarCount > eastToWestCarCount && eastToSouthCarCount > southToWestCarCount) {
                         trafficLightsThatShouldBeGreen.add(southToEastTrafficLight);//3
                         trafficLightsThatShouldBeGreen.add(eastToSouthTrafficLight);//3
                         trafficLightsThatShouldBeGreen.add(eastToWestTrafficLight);//3
-                    }else if(westToSouthCarCount > eastToWestCarCount && westToSouthCarCount > eastToSouthCarCount && westToSouthCarCount > southToWestCarCount){
-                        if(southToWestCarCount > eastToWestCarCount){
+                    } else if (westToSouthCarCount > eastToWestCarCount && westToSouthCarCount > eastToSouthCarCount && westToSouthCarCount > southToWestCarCount) {
+                        if (southToWestCarCount > eastToWestCarCount) {
                             trafficLightsThatShouldBeGreen.add(westToSouthTrafficLight);//4
                             trafficLightsThatShouldBeGreen.add(southToEastTrafficLight);//4
                             trafficLightsThatShouldBeGreen.add(southToWestTrafficLight);//4
-                        }else{
+                        } else {
                             trafficLightsThatShouldBeGreen.add(westToSouthTrafficLight);//2
                             trafficLightsThatShouldBeGreen.add(southToEastTrafficLight);//2
                             trafficLightsThatShouldBeGreen.add(eastToWestTrafficLight);//2
                         }
-                    }else{
-                        if(westToSouthCarCount > eastToSouthCarCount){
+                    } else {
+                        if (westToSouthCarCount > eastToSouthCarCount) {
                             trafficLightsThatShouldBeGreen.add(westToSouthTrafficLight);//2
                             trafficLightsThatShouldBeGreen.add(southToEastTrafficLight);//2
                             trafficLightsThatShouldBeGreen.add(eastToWestTrafficLight);//2
-                        }else{
+                        } else {
                             trafficLightsThatShouldBeGreen.add(westToSouthTrafficLight);//4
                             trafficLightsThatShouldBeGreen.add(southToEastTrafficLight);//4
                             trafficLightsThatShouldBeGreen.add(southToWestTrafficLight);//4
                         }
-                    }                    
-                                        
+                    }
+
                     break;
-                                        
+
                 case ("SW"):
                     trafficLightsThatShouldBeGreen.add(westToSouthTrafficLight);//4
                     trafficLightsThatShouldBeGreen.add(southToEastTrafficLight);//4
                     trafficLightsThatShouldBeGreen.add(southToWestTrafficLight);//4
-                    
+
                     break;
-                    
+
                 case ("ES"):
                     trafficLightsThatShouldBeGreen.add(southToEastTrafficLight);//3
                     trafficLightsThatShouldBeGreen.add(eastToSouthTrafficLight);//3
                     trafficLightsThatShouldBeGreen.add(eastToWestTrafficLight);//3                    
-                    
+
                     break;
-                    
+
                 case ("WE"):
                     trafficLightsThatShouldBeGreen.add(westToEastTrafficLight);//1
                     trafficLightsThatShouldBeGreen.add(westToSouthTrafficLight);//1
                     trafficLightsThatShouldBeGreen.add(eastToWestTrafficLight);//1
-                    
+
                     break;
-                    
-                    
+
             }
-            
-                
+
             long t = new Date().getTime();
             Date nextUpdate = new Date(t + 1000);
-                      
-            for(AID trafficLight : trafficLightsMetadata.keySet()){
-                if(trafficLightsThatShouldBeGreen.contains(trafficLight)){
-                    sendTrafficLightNewState(trafficLight, "green", nextUpdate);    
-                }                
-                else {
-                    sendTrafficLightNewState(trafficLight, "red", nextUpdate);    
+
+            for (AID trafficLight : trafficLightsMetadata.keySet()) {
+                if (trafficLightsThatShouldBeGreen.contains(trafficLight)) {
+                    sendTrafficLightNewState(trafficLight, "green", nextUpdate);
+                } else {
+                    sendTrafficLightNewState(trafficLight, "red", nextUpdate);
                 }
-            }                        
+            }
         }
         
                 public void setRandomWithPredefinedStates(){
@@ -476,17 +468,17 @@ public class Auctioneer extends BaseAgent {
             }
 
             this.myAgent.send(message);
-        }        
+        }
     }
 
     private class RequestTrafficLightOfferBehaviour extends TickerBehaviour {
 
         public RequestTrafficLightOfferBehaviour(Agent a, long period) {
             super(a, period);
-        }        
+        }
 
         @Override
-        protected void onTick() {
+        public void onTick() {
             TrafficLightOffer tlo = new TrafficLightOffer();
 
             jade.lang.acl.ACLMessage message = new jade.lang.acl.ACLMessage(
@@ -495,22 +487,85 @@ public class Auctioneer extends BaseAgent {
             message.setLanguage(codec.getName());
             message.setOntology(ontology.getName());
             tlo.setIndex(requestIndex);
-            for(AID trafficLight :  trafficLightAgents){
-                
+            for (AID trafficLight : trafficLightAgents) {
+
 //                if(trafficLightsMetadata.get(trafficLight).get("crossLocation").equalsIgnoreCase(crossLocation)){                
-                    try {
-                        getContentManager().fillContent(message, new Action(trafficLight, tlo));
-                        message.addReceiver(trafficLight);
-                    } catch (Codec.CodecException ex) {
-                        Logger.getLogger(Auctioneer.class.getName()).log(Level.SEVERE, null, ex);
-                    } catch (OntologyException ex) {
-                        Logger.getLogger(Auctioneer.class.getName()).log(Level.SEVERE, null, ex);
-                    }
+                try {
+                    getContentManager().fillContent(message, new Action(trafficLight, tlo));
+                    message.addReceiver(trafficLight);
+                } catch (Codec.CodecException ex) {
+                    Logger.getLogger(Auctioneer.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (OntologyException ex) {
+                    Logger.getLogger(Auctioneer.class.getName()).log(Level.SEVERE, null, ex);
+                }
 //                }
             }
-            
-            this.myAgent.send(message);
+            message.setProtocol(FIPANames.InteractionProtocol.FIPA_CONTRACT_NET);
+            message.setReplyByDate(new Date(System.currentTimeMillis() + 10000));
+
+            addBehaviour(new ContractNetInitiator(this.myAgent, message) {
+
+                @Override
+                protected void handlePropose(ACLMessage propose, Vector acceptances) {
+                    System.out.println("Agent " + propose.getSender().getName() + " proposed " + propose.getContent());
+                }
+
+                @Override
+                protected void handleRefuse(ACLMessage refuse) {
+                    System.out.println("Agent " + refuse.getSender().getName() + " refused");
+                }
+
+                @Override
+                protected void handleAllResponses(Vector responses, Vector acceptances) {
+                    if (responses.size() < trafficLightAgents.size()) {
+                        // Some responder didn't reply within the specified timeout
+                        System.out.println("Timeout expired: missing " + (trafficLightAgents.size() - responses.size()) + " responses");
+                    }
+                    // Evaluate proposals.
+                    int mostCars = -1;
+                    AID bestProposer = null;
+                    ACLMessage accept = null;
+                    Enumeration e = responses.elements();
+                    while (e.hasMoreElements()) {
+                        ACLMessage msg = (ACLMessage) e.nextElement();
+                        if (msg.getPerformative() == ACLMessage.PROPOSE) {
+                            try {
+                                ACLMessage reply = msg.createReply();
+                                reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
+                                acceptances.addElement(reply);
+                                ContentElement content = getContentManager().extractContent(msg);
+                                Concept action = ((Action) content).getAction();
+                                TrafficLightOffer tlo = (TrafficLightOffer) action;
+                                int proposal = tlo.getCarCount();
+                                if (proposal > mostCars) {
+                                    mostCars = proposal;
+                                    bestProposer = msg.getSender();
+                                    accept = reply;
+                                }
+                            } catch (Codec.CodecException ex) {
+                                Logger.getLogger(Auctioneer.class.getName()).log(Level.SEVERE, null, ex);
+                            } catch (OntologyException ex) {
+                                Logger.getLogger(Auctioneer.class.getName()).log(Level.SEVERE, null, ex);
+                            }
+                        }
+                    }
+                    // Accept the proposal of the best proposer
+                    if (accept != null) {
+                        System.out.println("Accepting proposal " + mostCars + " from responder " + bestProposer.getName());
+                        accept.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
+                    }
+                }
+
+                @Override
+                protected void handleInform(ACLMessage inform) {
+                    System.out.println("Agent " + inform.getSender().getName() + " successfully performed the requested action");
+                }
+
+            });
+
+//            this.myAgent.send(message);
         }
+
     }
 
     private class ReceiveMessagesBehaviour extends CyclicBehaviour {
@@ -520,84 +575,32 @@ public class Auctioneer extends BaseAgent {
         @Override
         public void action() {
 
-            ACLMessage msg = receive();
+            MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.PROPAGATE);
+
+            ACLMessage msg = receive(mt);
             if (msg == null) {
-//                block();
+                block();
                 return;
             }
             try {
                 ContentElement content = getContentManager().extractContent(msg);
-                Concept action = ((Action)content).getAction();
+                Concept action = ((Action) content).getAction();
 
                 switch (msg.getPerformative()) {
 
-                    case (ACLMessage.PROPOSE):
+                    case (ACLMessage.PROPAGATE):
 
-                        System.out.println("Request from " + msg.getSender().getLocalName());
-
-                        if (action instanceof TrafficLightOffer) {
-                            addBehaviour(new HandleTrafficLightOfferPropose(myAgent, msg));
-                        } else {
-                            replyNotUnderstood(msg);
-                        }
-                        break;
-
-                    case (ACLMessage.INFORM):
-
-                        System.out.println("Request from " + msg.getSender().getLocalName());
-
+//                        System.out.println("Request from " + msg.getSender().getLocalName());
                         if (action instanceof TrafficLightLocationAndDirection) {
                             addBehaviour(new HandleTrafficLightLocationAndDirectionInform(myAgent, msg));
-                        } else {
-                            replyNotUnderstood(msg);
                         }
                         break;
-                                                                                
-                    default:
-                        replyNotUnderstood(msg);
                 }
             } catch (Exception ex) {
             }
         }
-    }    
-    
-    private class HandleTrafficLightOfferPropose extends OneShotBehaviour {
+    }
 
-        private final ACLMessage msg;
-
-        public HandleTrafficLightOfferPropose(Agent myAgent, ACLMessage msg) {
-            super(myAgent);
-            this.msg = msg;
-        }
-
-        @Override
-        public void action() {
-
-            TrafficLightOffer tlo;
-            try {
-                ContentElement content = getContentManager().extractContent(msg);
-                Concept action = ((Action)content).getAction();                
-                tlo = (TrafficLightOffer) action;
-
-                if (tlo.getIndex() == requestIndex) {
-                    trafficLightsMetadata.get(msg.getSender()).put(TRAFFIC_LIGHT_OFFER_CARCOUNT, String.valueOf(tlo.getCarCount()));
-                    trafficLightsMetadata.get(msg.getSender()).put(TRAFFIC_LIGHT_OFFER_LAST_GREEN_TIME, String.valueOf(tlo.getLastGreenTime()));
-                    receivedAnswersPerIndex++;
-                }
-
-                if (receivedAnswersPerIndex == trafficLightAgents.size()) {
-                    addBehaviour(new SetStateBehaviour());
-                    receivedAnswersPerIndex = 0;
-                    requestIndex++;
-                }            
-            } catch (Codec.CodecException ex) {
-                Logger.getLogger(ReportingAgent.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (OntologyException ex) {
-                Logger.getLogger(ReportingAgent.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-    }   
-    
     public class HandleTrafficLightLocationAndDirectionInform extends OneShotBehaviour {
 
         private final ACLMessage msg;
@@ -623,15 +626,15 @@ public class Auctioneer extends BaseAgent {
 //                    trafficLightsMetadata.get(msg.getSender()).put("crossLocation", tllad.getCrossLocation());
                     System.out.println(tllad.getLocation() + " " + tllad.getDirection());
                     trafficLightsByDirection.put(tllad.getLocation() + tllad.getDirection(), msg.getSender());
-                }else{
+                } else {
                     trafficLightsMetadata.remove(msg.getSender());
                     trafficLightAgents.remove(msg.getSender());
-                }                               
+                }
 
                 ACLMessage reply = msg.createReply();
                 reply.setPerformative(ACLMessage.CONFIRM);
                 send(reply);
-                System.out.println("TrafficLightLocationAndDirection received!");
+//                System.out.println("TrafficLightLocationAndDirection received!");
             } catch (Codec.CodecException ex) {
                 Logger.getLogger(Auctioneer.class.getName()).log(Level.SEVERE, null, ex);
             } catch (OntologyException ex) {
@@ -650,14 +653,11 @@ public class Auctioneer extends BaseAgent {
                 @Override
                 protected void onWake() {
                     super.onWake(); //To change body of generated methods, choose Tools | Templates.
-                    myAgent.addBehaviour(new RequestTrafficLightOfferBehaviour(this.myAgent, 500));
+                    addBehaviour(new RequestTrafficLightOfferBehaviour(myAgent, 1000));
                 }
-                               
             });
-            
-//            addSubBehaviour(new SetStateBehaviour(this.myAgent, 1000));
         }
-        
+
         private class FindExistingTrafficLightsBehaviour extends WakerBehaviour {
 
             public FindExistingTrafficLightsBehaviour(Agent a, long timeout) {
@@ -670,7 +670,7 @@ public class Auctioneer extends BaseAgent {
                 findAndAddTrafficLights();
                 trafficLightAgents.stream().forEach((agent) -> {
                     trafficLightsMetadata.put(agent, new HashMap<>());
-                    System.out.println("Found Trafficlight: " + agent.getLocalName());
+//                    System.out.println("Found Trafficlight: " + agent.getLocalName());
                     askTrafficLightForLocationAndDirection(agent);
                 });
             }
@@ -716,84 +716,6 @@ public class Auctioneer extends BaseAgent {
                 }
             }
         }
-
-        private class SetStateBehaviour extends TickerBehaviour {
-
-            private String activeDirection = "SE";
-
-            public SetStateBehaviour(Agent a, long period) {
-                super(a, period);
-            }
-
-            @Override
-            public void onTick() {
-
-                long t = new Date().getTime();
-                Date nextUpdate = new Date(t + 1000);
-
-                for (AID trafficLight : trafficLightAgents) {
-                    if (activeDirection.equalsIgnoreCase("SE")) {
-
-                        if (trafficLightsMetadata.get(trafficLight).get("location").equalsIgnoreCase("W") && trafficLightsMetadata.get(trafficLight).get("direction").equalsIgnoreCase("E")) {
-                            sendTrafficLightNewState(trafficLight, "green", nextUpdate);
-                        }
-
-                        if (trafficLightsMetadata.get(trafficLight).get("location").equalsIgnoreCase("E") && trafficLightsMetadata.get(trafficLight).get("direction").equalsIgnoreCase("W")) {
-                            sendTrafficLightNewState(trafficLight, "green", nextUpdate);
-                        }
-
-                        if (trafficLightsMetadata.get(trafficLight).get("location").equalsIgnoreCase("S") && trafficLightsMetadata.get(trafficLight).get("direction").equalsIgnoreCase("E")) {
-                            sendTrafficLightNewState(trafficLight, "red", nextUpdate);
-                        }
-
-                        lastDirection = "WE";
-                    } else {
-                        if (trafficLightsMetadata.get(trafficLight).get("location").equalsIgnoreCase("W") && trafficLightsMetadata.get(trafficLight).get("direction").equalsIgnoreCase("E")) {
-                            sendTrafficLightNewState(trafficLight, "red", nextUpdate);
-                        }
-
-                        if (trafficLightsMetadata.get(trafficLight).get("location").equalsIgnoreCase("E") && trafficLightsMetadata.get(trafficLight).get("direction").equalsIgnoreCase("W")) {
-                            sendTrafficLightNewState(trafficLight, "red", nextUpdate);
-                        }
-
-                        if (trafficLightsMetadata.get(trafficLight).get("location").equalsIgnoreCase("S") && trafficLightsMetadata.get(trafficLight).get("direction").equalsIgnoreCase("E")) {
-                            sendTrafficLightNewState(trafficLight, "green", nextUpdate);
-                        }
-
-                        lastDirection = "SE";
-                    }
-
-                }
-                activeDirection = lastDirection;
-            }
-
-            private void sendTrafficLightNewState(AID trafficLight, String state, Date nextUpdate) {
-
-                TrafficLightState tls = new TrafficLightState();
-                tls.setTrafficState(state);
-                tls.setNextUpdate(nextUpdate);
-
-                jade.lang.acl.ACLMessage message = new jade.lang.acl.ACLMessage(
-                        jade.lang.acl.ACLMessage.PROPOSE);
-
-                message.setLanguage(codec.getName());
-                message.setOntology(ontology.getName());
-
-                message.addReceiver(trafficLight);
-
-                try {
-                    getContentManager().fillContent(message, new Action(trafficLight, tls));
-                } catch (Codec.CodecException ex) {
-                    Logger.getLogger(Auctioneer.class.getName()).log(Level.SEVERE, null, ex);
-                } catch (OntologyException ex) {
-                    Logger.getLogger(Auctioneer.class.getName()).log(Level.SEVERE, null, ex);
-                }
-
-                this.myAgent.send(message);
-            }
-
-        }
-
     }
 
 }
