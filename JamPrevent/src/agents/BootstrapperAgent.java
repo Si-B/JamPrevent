@@ -18,8 +18,16 @@ import java.util.logging.Logger;
  *
  * @author knut
  */
+/**
+ * This Agent creates one SimulatorAgent and all the TrafficLightAgents and
+ * Auctioneers for each auctioning-method set in its types array ("Random",
+ * "RandomPredefined", "Predefined", "SingleHeighest").
+ */
 public class BootstrapperAgent extends BaseAgent {
 
+    /**
+     * The setup method gets called automatically and creates the agents.
+     */
     @Override
     public void setup() {
         try {
@@ -32,9 +40,7 @@ public class BootstrapperAgent extends BaseAgent {
             AgentController ac;
             ac = cc.createNewAgent("SimulatorAgent", "agents.LoadSimulatorAgent", new String[]{});
             ac.start();
-            
-            
-            
+
             for (String type : types) {
                 ac = cc.createNewAgent("SouthEast" + type, "agents.TrafficLight", new String[]{"S", "E", type});
                 ac.start();

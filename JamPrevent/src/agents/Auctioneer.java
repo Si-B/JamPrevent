@@ -44,6 +44,14 @@ import messages.TrafficLightOffer;
  */
 public class Auctioneer extends BaseAgent {
 
+
+    /**
+     * Auctioneer
+     * talks to TrafficLight agents and asks them for offers
+     * decides on which offers to accept (set the green state) or
+     * refuse based on four different, configurable algorithms
+     */
+
     private final List<AID> trafficLightAgents = new ArrayList<>();
     private final HashMap<AID, HashMap<String, String>> trafficLightsMetadata = new HashMap<>();
     private final HashMap<String, AID> trafficLightsByDirection = new HashMap<>();

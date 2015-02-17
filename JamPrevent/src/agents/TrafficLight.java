@@ -30,10 +30,16 @@ import messages.TrafficLightOffer;
 import messages.TrafficLightProperties;
 
 /**
- *
- * @author SiB
- * -gui -agents "WestSouthLight:agents.TrafficLight(W,S,Random);WestEastLight:agents.TrafficLight(W,E,Random);EastWestLight:agents.TrafficLight(E,W,Random);EastSouthLight:agents.TrafficLight(E,S,Random);SouthEastLight:agents.TrafficLight(S,E,Random);SouthWestLight:agents.TrafficLight(S,W,Random);Auctioneer:agents.Auctioneer(Random);WestSouthLightSingleHeighest:agents.TrafficLight(W,S,SingleHeighest);WestEastLightSingleHeighest:agents.TrafficLight(W,E,SingleHeighest);EastWestLightSingleHeighest:agents.TrafficLight(E,W,SingleHeighest);EastSouthLightSingleHeighest:agents.TrafficLight(E,S,SingleHeighest);SouthEastLightSingleHeighest:agents.TrafficLight(S,E,SingleHeighest);SouthWestLightSingleHeighest:agents.TrafficLight(S,W,SingleHeighest);AuctioneerSingleHeighest:agents.Auctioneer(SingleHeighest);WestSouthLightPredefined:agents.TrafficLight(W,S,Predefined);WestEastLightPredefined:agents.TrafficLight(W,E,Predefined);EastWestLightPredefined:agents.TrafficLight(E,W,Predefined);EastSouthLightPredefined:agents.TrafficLight(E,S,Predefined);SouthEastLightPredefined:agents.TrafficLight(S,E,Predefined);SouthWestLightPredefined:agents.TrafficLight(S,W,Predefined);AuctioneerPredefined:agents.Auctioneer(Predefined);ReportProvider:agents.ReportingAgent(C:\Users\SiB\Documents\GitHub\JamPrevent\frontend\);Simulator:agents.LoadSimulatorAgent"
+ * The representation of a traffic light. 
+ * The two most important parts are the ContractNetResponder that 
+ * responds to call for proposals from Auctioneers and the ReceiveAllMessages
+ * behaviour that respons to everthing else.
+ * The trafficlight has a location, direction, current state(red/green/yellow),
+ * carCount, lastGreenTime, lastCallForProposalReplyTime and a crossLocation (
+ * to differentiate between multiple crossings).
+ * 
  */
+
 public class TrafficLight extends BaseAgent {
 
     private String location = "";
@@ -145,6 +151,13 @@ public class TrafficLight extends BaseAgent {
         this.crossLocation = crossLocation;
     }
     
+    
+    /**
+     * Called by the ReceiveMessagesBehaviour if another agent
+     * asked wants to change the traffic light's car count. It calls
+     * the addAdditionalCars method with the amount of cars from the message
+     * and replys the sender with a confirm.
+     */
     private class HandleTrafficLightLoadSimulationPropose extends OneShotBehaviour {
 
         private final ACLMessage msg;
@@ -174,6 +187,10 @@ public class TrafficLight extends BaseAgent {
         }
     }
 
+     /**
+     * Receives and delegates all messages that are not handled by
+     * the ContractNetResponder.
+     */
     private class ReceiveMessagesBehaviour extends CyclicBehaviour {
 
         private static final long serialVersionUID = -5018397038252984135L;
@@ -213,6 +230,13 @@ public class TrafficLight extends BaseAgent {
         }
     }
 
+    
+    /**
+     * Called by the ReceiveMessagesBehaviour if another agent
+     * asked for the traffic light's properties. It sends 
+     * location, direction, carcount, trafficState (red/green/yellow)
+     * and crossLocation to the agent that asked.
+     */
     private class HandleTrafficLightPropertiesRequest extends OneShotBehaviour {
 
         private final ACLMessage msg;
@@ -251,6 +275,12 @@ public class TrafficLight extends BaseAgent {
         }
     }
 
+    
+     /**
+     * Called by the ReceiveMessagesBehaviour if another agent
+     * asked for the traffic light's location and direction. It sends 
+     * location, direction to the agent that asked.
+     */
     private class HandleTrafficLightLocationAndDirectionRequest extends OneShotBehaviour {
 
         private final ACLMessage msg;
@@ -290,6 +320,12 @@ public class TrafficLight extends BaseAgent {
         }
     }
 
+    
+    /**
+     * Sets the trafficState to the specified string. If it is "green" it 
+     * subtracts 10 cars from the current carCount.
+     * @param trafficState the color that the light should be (red/green/yellow)
+     */
     public void setTrafficState(String trafficState) {
         this.trafficState = trafficState;
 
