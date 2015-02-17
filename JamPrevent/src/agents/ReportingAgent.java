@@ -19,6 +19,7 @@ import jade.lang.acl.MessageTemplate;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -27,10 +28,9 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 /**
- *The ReportingAgent asks all traffic lights for their current state
- * on a regular basis. It then writes the results to a json-file that
- * can be read for the in-browser evaluation.
- * Takes an absolute path to the fronted directory when being created..
+ * The ReportingAgent asks all traffic lights for their current state on a
+ * regular basis. It then writes the results to a json-file that can be read for
+ * the in-browser evaluation. 
  */
 public class ReportingAgent extends FindTrafficLightsAgent {
 
@@ -48,12 +48,8 @@ public class ReportingAgent extends FindTrafficLightsAgent {
 
         Object[] arguments = getArguments();
 
-        // takes one argument: the absolute path to the fronted directory
-        if (arguments.length > 0) {
-            pathToDump = arguments[0].toString();
-            dumpFile = new File(pathToDump, "state.json");
-            dumpFileHistory = new File(pathToDump, "history.json");
-        }
+        dumpFile = new File("../frontend/state.json");
+        dumpFileHistory = new File("../frontend/history.json");
 
         //requesting known TrafficLights to dump their properies to me
         addBehaviour(new RequestTrafficLightsToDumpPropertiesBehaviour(this, 50));
@@ -80,7 +76,7 @@ public class ReportingAgent extends FindTrafficLightsAgent {
             for (JSONObject currentTrafficLightState : trafficLightStatesHistory) {
                 outputValues.add(currentTrafficLightState);
             }
-            
+
             try {
                 try (FileOutputStream file = new FileOutputStream(dumpFileHistory)) {
                     file.write(outputValues.toJSONString().getBytes());
@@ -90,7 +86,7 @@ public class ReportingAgent extends FindTrafficLightsAgent {
             }
         }
     }
-    
+
     /**
      * Is being caclled by ReceiveMessagesBehaviour and stores the information
      * that it got from asking a traffic light for all of its properties.
@@ -159,7 +155,7 @@ public class ReportingAgent extends FindTrafficLightsAgent {
     }
 
     /**
-     *  Receives all messages and delegates them to their corresponding methods.
+     * Receives all messages and delegates them to their corresponding methods.
      */
     private class ReceiveMessagesBehaviour extends CyclicBehaviour {
 
@@ -195,7 +191,6 @@ public class ReportingAgent extends FindTrafficLightsAgent {
         }
     }
 
-    
     /**
      * Ask all TrafficLights to dump their properties on a regular basis.
      */

@@ -40,6 +40,9 @@ public class BootstrapperAgent extends BaseAgent {
             AgentController ac;
             ac = cc.createNewAgent("SimulatorAgent", "agents.LoadSimulatorAgent", new String[]{});
             ac.start();
+            
+            ac = cc.createNewAgent("ReportingAgent", "agents.ReportingAgent", new String[]{});
+            ac.start();
 
             for (String type : types) {
                 ac = cc.createNewAgent("SouthEast" + type, "agents.TrafficLight", new String[]{"S", "E", type});
