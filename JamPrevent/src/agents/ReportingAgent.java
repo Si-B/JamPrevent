@@ -27,8 +27,10 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 /**
- *
- * @author sib
+ *The ReportingAgent asks all traffic lights for their current state
+ * on a regular basis. It then writes the results to a json-file that
+ * can be read for the in-browser evaluation.
+ * Takes an absolute path to the fronted directory when being created..
  */
 public class ReportingAgent extends FindTrafficLightsAgent {
 
@@ -42,10 +44,11 @@ public class ReportingAgent extends FindTrafficLightsAgent {
 
     @Override
     protected void setup() {
-        super.setup(); //To change body of generated methods, choose Tools | Templates.
+        super.setup();
 
         Object[] arguments = getArguments();
 
+        // takes one argument: the absolute path to the fronted directory
         if (arguments.length > 0) {
             pathToDump = arguments[0].toString();
             dumpFile = new File(pathToDump, "state.json");
@@ -61,6 +64,9 @@ public class ReportingAgent extends FindTrafficLightsAgent {
         addBehaviour(new DumpTrafficLightHistory(this, 1000));
     }
 
+    /**
+     * This writes the collected data to a json file in the specified directory.
+     */
     private class DumpTrafficLightHistory extends TickerBehaviour {
 
         public DumpTrafficLightHistory(Agent a, long period) {
@@ -84,7 +90,11 @@ public class ReportingAgent extends FindTrafficLightsAgent {
             }
         }
     }
-
+    
+    /**
+     * Is being caclled by ReceiveMessagesBehaviour and stores the information
+     * that it got from asking a traffic light for all of its properties.
+     */
     private class HandleTrafficLightPropertiesInform extends OneShotBehaviour {
 
         private final ACLMessage msg;
@@ -148,6 +158,9 @@ public class ReportingAgent extends FindTrafficLightsAgent {
         }
     }
 
+    /**
+     *  Receives all messages and delegates them to their corresponding methods.
+     */
     private class ReceiveMessagesBehaviour extends CyclicBehaviour {
 
         private static final long serialVersionUID = -5018397038252984135L;
@@ -182,6 +195,10 @@ public class ReportingAgent extends FindTrafficLightsAgent {
         }
     }
 
+    
+    /**
+     * Ask all TrafficLights to dump their properties on a regular basis.
+     */
     private class RequestTrafficLightsToDumpPropertiesBehaviour extends TickerBehaviour {
 
         public RequestTrafficLightsToDumpPropertiesBehaviour(Agent a, long period) {
