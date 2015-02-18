@@ -5,7 +5,7 @@
 			plotDifferences(data);
 			plotSums(data);
 		});
-	}, 100);
+	}, 500);
 
 	function createArrayFromDict(data){
 		return _.map(data, function(value, key){
