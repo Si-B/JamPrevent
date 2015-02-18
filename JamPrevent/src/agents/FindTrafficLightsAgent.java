@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- *
+ *Class to be inherited from by all classes which want to find all TrafficLights in the yellow pages.
  * @author SiB
  */
 public class FindTrafficLightsAgent extends BaseAgent {

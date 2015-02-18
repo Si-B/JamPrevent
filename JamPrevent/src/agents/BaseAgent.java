@@ -21,7 +21,7 @@ import java.util.logging.Logger;
 import ontologies.JamPreventOntology;
 import ontologies.JamPreventVocabulary;
 /**
- *
+ *Baseclass for all agents to register themselfes at the yellow pages.
  * @author SiB
  */
 public class BaseAgent extends Agent implements JamPreventVocabulary{
@@ -56,12 +56,10 @@ public class BaseAgent extends Agent implements JamPreventVocabulary{
 
     protected void replyNotUnderstood(ACLMessage msg) {
         try {
-            //            java.io.Serializable content = msg.getContentObject();
             Action content = (Action) getContentManager().extractContent(msg);
             ACLMessage reply = msg.createReply();
             reply.setPerformative(ACLMessage.NOT_UNDERSTOOD);
             getContentManager().fillContent(reply, new Action(msg.getSender(), content));
-            //reply.setContentObject(content);
             send(reply);
         } catch (Codec.CodecException ex) {
             Logger.getLogger(BaseAgent.class.getName()).log(Level.SEVERE, null, ex);

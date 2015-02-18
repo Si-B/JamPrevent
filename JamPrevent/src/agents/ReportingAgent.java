@@ -10,27 +10,17 @@ import jade.content.ContentElement;
 import jade.content.lang.Codec;
 import jade.content.onto.OntologyException;
 import jade.content.onto.basic.Action;
-import jade.core.AID;
 import jade.core.Agent;
-import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.OneShotBehaviour;
 import jade.core.behaviours.TickerBehaviour;
-import jade.core.behaviours.WakerBehaviour;
-import jade.domain.DFService;
-import jade.domain.FIPAAgentManagement.DFAgentDescription;
-import jade.domain.FIPAAgentManagement.ServiceDescription;
-import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.net.URL;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import messages.TrafficLightProperties;
@@ -38,8 +28,9 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 /**
- *
- * @author sib
+ * The ReportingAgent asks all traffic lights for their current state on a
+ * regular basis. It then writes the results to a json-file that can be read for
+ * the in-browser evaluation. 
  */
 public class ReportingAgent extends FindTrafficLightsAgent {
 
@@ -53,15 +44,12 @@ public class ReportingAgent extends FindTrafficLightsAgent {
 
     @Override
     protected void setup() {
-        super.setup(); //To change body of generated methods, choose Tools | Templates.
+        super.setup();
 
         Object[] arguments = getArguments();
 
-        if (arguments.length > 0) {
-            pathToDump = arguments[0].toString();
-            dumpFile = new File(pathToDump, "state.json");
-            dumpFileHistory = new File(pathToDump, "history.json");
-        }
+        dumpFile = new File("../frontend/state.json");
+        dumpFileHistory = new File("../frontend/history.json");
 
         //requesting known TrafficLights to dump their properies to me
         addBehaviour(new RequestTrafficLightsToDumpPropertiesBehaviour(this, 50));
@@ -72,6 +60,9 @@ public class ReportingAgent extends FindTrafficLightsAgent {
         addBehaviour(new DumpTrafficLightHistory(this, 1000));
     }
 
+    /**
+     * This writes the collected data to a json file in the specified directory.
+     */
     private class DumpTrafficLightHistory extends TickerBehaviour {
 
         public DumpTrafficLightHistory(Agent a, long period) {
@@ -86,12 +77,6 @@ public class ReportingAgent extends FindTrafficLightsAgent {
                 outputValues.add(currentTrafficLightState);
             }
 
-//            try(PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(dumpFileHistory, false)))) {
-//                out.println(outputValues.toJSONString());
-//            }catch (IOException e) {
-//                //exception handling left as an exercise for the reader
-//            }            
-            
             try {
                 try (FileOutputStream file = new FileOutputStream(dumpFileHistory)) {
                     file.write(outputValues.toJSONString().getBytes());
@@ -99,10 +84,13 @@ public class ReportingAgent extends FindTrafficLightsAgent {
             } catch (IOException ex) {
                 Logger.getLogger(ReportingAgent.class.getName()).log(Level.SEVERE, null, ex);
             }
-//            trafficLightStatesHistory.clear();
         }
     }
 
+    /**
+     * Is being caclled by ReceiveMessagesBehaviour and stores the information
+     * that it got from asking a traffic light for all of its properties.
+     */
     private class HandleTrafficLightPropertiesInform extends OneShotBehaviour {
 
         private final ACLMessage msg;
@@ -166,6 +154,9 @@ public class ReportingAgent extends FindTrafficLightsAgent {
         }
     }
 
+    /**
+     * Receives all messages and delegates them to their corresponding methods.
+     */
     private class ReceiveMessagesBehaviour extends CyclicBehaviour {
 
         private static final long serialVersionUID = -5018397038252984135L;
@@ -185,9 +176,6 @@ public class ReportingAgent extends FindTrafficLightsAgent {
                 switch (msg.getPerformative()) {
 
                     case (ACLMessage.PROPAGATE):
-
-//                        System.out.println("Request from " + msg.getSender().getLocalName());
-
                         if (action instanceof TrafficLightProperties) {
                             addBehaviour(new HandleTrafficLightPropertiesInform(myAgent, msg));
                         } else {
@@ -203,6 +191,9 @@ public class ReportingAgent extends FindTrafficLightsAgent {
         }
     }
 
+    /**
+     * Ask all TrafficLights to dump their properties on a regular basis.
+     */
     private class RequestTrafficLightsToDumpPropertiesBehaviour extends TickerBehaviour {
 
         public RequestTrafficLightsToDumpPropertiesBehaviour(Agent a, long period) {

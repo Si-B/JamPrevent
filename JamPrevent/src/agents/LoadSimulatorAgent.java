@@ -12,28 +12,16 @@ import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.SequentialBehaviour;
 import jade.core.behaviours.TickerBehaviour;
-import jade.core.behaviours.WakerBehaviour;
-import jade.domain.DFService;
-import jade.domain.FIPAAgentManagement.DFAgentDescription;
-import jade.domain.FIPAAgentManagement.ServiceDescription;
-import jade.domain.FIPAException;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import messages.TrafficLightLoadSimulation;
 
 /**
- *
+ *Simulates arriving cars at all known TrafficLights. Uses a random number from 0 to 10.
  * @author knut
  */
 public class LoadSimulatorAgent extends FindTrafficLightsAgent {
-
-//    private final List<AID> trafficLightAgents = new ArrayList<>();
-    private final HashMap<AID, HashMap<String, String>> trafficLightsMetadata = new HashMap<>();
 
     @Override
     public void setup() {
@@ -44,36 +32,22 @@ public class LoadSimulatorAgent extends FindTrafficLightsAgent {
     public class DefaultExecutionBehaviour extends SequentialBehaviour {
 
         public DefaultExecutionBehaviour() {
-//            addSubBehaviour(new FindTrafficLightsBehaviour());
-            addSubBehaviour(new SetStateBehaviour(this.myAgent, 1000));
+            addSubBehaviour(new SimulateLoadBehaviour(this.myAgent, 1000));
         }
 
-        private class SetStateBehaviour extends TickerBehaviour {
+        private class SimulateLoadBehaviour extends TickerBehaviour {
 
-            public SetStateBehaviour(Agent a, long period) {
+            public SimulateLoadBehaviour(Agent a, long period) {
                 super(a, period);
             }
 
             @Override
             public void onTick() {
-//                int cars = getPoissonRandom(5);
                 for (AID trafficLight : trafficLightAgents) {
                     sendTrafficLightAdditionalCars(trafficLight, randInt(0, 10));
                 }
             }
-        }
-
-        private int getPoissonRandom(double mean) {
-            Random r = new Random();
-            double L = Math.exp(-mean);
-            int k = 0;
-            double p = 1.0;
-            do {
-                p = p * r.nextDouble();
-                k++;
-            } while (p > L);
-            return k - 1;
-        }        
+        } 
         
         private void sendTrafficLightAdditionalCars(AID trafficLight, int count) {
 
@@ -89,13 +63,7 @@ public class LoadSimulatorAgent extends FindTrafficLightsAgent {
                 
                 getContentManager().fillContent(message, new Action(trafficLight, tlls));
                 
-                message.addReceiver(trafficLight);
-                
-//            try {
-//                message.setContentObject(tlls);
-//            } catch (IOException ex) {
-//                Logger.getLogger(LoadSimulatorAgent.class.getName()).log(Level.SEVERE, null, ex);
-//            }
+                message.addReceiver(trafficLight);               
                 
                 this.myAgent.send(message);
             } catch (Codec.CodecException ex) {

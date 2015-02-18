@@ -11,10 +11,9 @@ import jade.content.lang.Codec;
 import jade.content.onto.OntologyException;
 import jade.content.onto.basic.Action;
 import jade.core.Agent;
-import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.OneShotBehaviour;
-import jade.core.behaviours.WakerBehaviour;
+import jade.core.behaviours.TickerBehaviour;
 import jade.domain.FIPAAgentManagement.FailureException;
 import jade.domain.FIPAAgentManagement.NotUnderstoodException;
 import jade.domain.FIPAAgentManagement.RefuseException;
@@ -29,13 +28,18 @@ import messages.TrafficLightLoadSimulation;
 import messages.TrafficLightLocationAndDirection;
 import messages.TrafficLightOffer;
 import messages.TrafficLightProperties;
-import messages.TrafficLightState;
 
 /**
- *
- * @author SiB
- * -gui -agents "WestSouthLight:agents.TrafficLight(W,S,Random);WestEastLight:agents.TrafficLight(W,E,Random);EastWestLight:agents.TrafficLight(E,W,Random);EastSouthLight:agents.TrafficLight(E,S,Random);SouthEastLight:agents.TrafficLight(S,E,Random);SouthWestLight:agents.TrafficLight(S,W,Random);Auctioneer:agents.Auctioneer(Random);WestSouthLightSingleHeighest:agents.TrafficLight(W,S,SingleHeighest);WestEastLightSingleHeighest:agents.TrafficLight(W,E,SingleHeighest);EastWestLightSingleHeighest:agents.TrafficLight(E,W,SingleHeighest);EastSouthLightSingleHeighest:agents.TrafficLight(E,S,SingleHeighest);SouthEastLightSingleHeighest:agents.TrafficLight(S,E,SingleHeighest);SouthWestLightSingleHeighest:agents.TrafficLight(S,W,SingleHeighest);AuctioneerSingleHeighest:agents.Auctioneer(SingleHeighest);WestSouthLightPredefined:agents.TrafficLight(W,S,Predefined);WestEastLightPredefined:agents.TrafficLight(W,E,Predefined);EastWestLightPredefined:agents.TrafficLight(E,W,Predefined);EastSouthLightPredefined:agents.TrafficLight(E,S,Predefined);SouthEastLightPredefined:agents.TrafficLight(S,E,Predefined);SouthWestLightPredefined:agents.TrafficLight(S,W,Predefined);AuctioneerPredefined:agents.Auctioneer(Predefined);ReportProvider:agents.ReportingAgent(C:\Users\SiB\Documents\GitHub\JamPrevent\frontend\);Simulator:agents.LoadSimulatorAgent"
+ * The representation of a traffic light. 
+ * The two most important parts are the ContractNetResponder that 
+ * responds to call for proposals from Auctioneers and the ReceiveAllMessages
+ * behaviour that respons to everthing else.
+ * The trafficlight has a location, direction, current state(red/green/yellow),
+ * carCount, lastGreenTime, lastCallForProposalReplyTime and a crossLocation (
+ * to differentiate between multiple crossings).
+ * 
  */
+
 public class TrafficLight extends BaseAgent {
 
     private String location = "";
@@ -43,6 +47,7 @@ public class TrafficLight extends BaseAgent {
     private String trafficState = "";
     private int carCount = 0;
     private Date lastGreenTime;
+    private Date lastCallForProposalReplyTime = new Date();
     private String crossLocation = "";
 
     @Override
@@ -56,11 +61,29 @@ public class TrafficLight extends BaseAgent {
             direction = arguments[1].toString();
             crossLocation = arguments[2].toString();
         }
+        
+        
+        //For emergencies set traffic state to yellow when there was no call for proposal for one second.
+        addBehaviour(new TickerBehaviour(this, 1000) {
+            
+            @Override
+            protected void onTick() {
+                if(System.currentTimeMillis() - lastCallForProposalReplyTime.getTime() > 1000){
+                    setTrafficState("yellow");
+                }
+            }
+        });
+
+        //Prepare to get all call for proposals by using the required message template.
+        
         MessageTemplate template = MessageTemplate.and(
                 MessageTemplate.MatchProtocol(FIPANames.InteractionProtocol.FIPA_CONTRACT_NET),
                 MessageTemplate.MatchPerformative(ACLMessage.CFP));
-
+                
+        
         addBehaviour(new ContractNetResponder(this, template) {
+            
+            //Handling call for proposals and preparing answers.
             @Override
             protected ACLMessage prepareResponse(ACLMessage cfp) throws NotUnderstoodException, RefuseException {
                 try {
@@ -76,8 +99,8 @@ public class TrafficLight extends BaseAgent {
                     reply.setPerformative(ACLMessage.PROPOSE);
 
                     getContentManager().fillContent(reply, new Action(cfp.getSender(), tlo));
-                    System.out.println("Agent " + getLocalName() + ": Proposing " + carCount);
-
+                    System.out.println("Agent " + getLocalName() + ": Proposing " + carCount);                    
+                    
                     return reply;
                 } catch (Codec.CodecException ex) {
                     Logger.getLogger(TrafficLight.class.getName()).log(Level.SEVERE, null, ex);
@@ -85,8 +108,9 @@ public class TrafficLight extends BaseAgent {
                     Logger.getLogger(TrafficLight.class.getName()).log(Level.SEVERE, null, ex);
                 }
                 return null;
-            }
-
+            }            
+            
+            //Notifying about accepted proposals and executed actions.
             @Override
             protected ACLMessage prepareResultNotification(ACLMessage cfp, ACLMessage propose, ACLMessage accept) throws FailureException {
                 System.out.println("Agent " + getLocalName() + ": Proposal accepted");
@@ -95,24 +119,29 @@ public class TrafficLight extends BaseAgent {
                 ACLMessage inform = accept.createReply();
                 inform.setPerformative(ACLMessage.INFORM);
                 return inform;
-            }                    
-
+            }                                
+            
+            //If proposal was rejected set the traffic state to red.
             @Override
             protected void handleRejectProposal(ACLMessage cfp, ACLMessage propose, ACLMessage reject) {
                 System.out.println("Agent " + getLocalName() + ": Proposal rejected");
                 setTrafficState("red");
+                lastCallForProposalReplyTime = new Date();
             }
 
+            //If proposal was accepted set the traffic state to green.
             @Override
             protected ACLMessage handleAcceptProposal(ACLMessage cfp, ACLMessage propose, ACLMessage accept) throws FailureException {
                 setTrafficState("green");
                 ACLMessage reply = accept.createReply();
                 reply.setPerformative(ACLMessage.INFORM);
+                lastCallForProposalReplyTime = new Date();
                 return reply;
             }
 
         });
-
+     
+        
         addBehaviour(new ReceiveMessagesBehaviour());
 
         registerAgent("TrafficLight-Service");
@@ -132,6 +161,13 @@ public class TrafficLight extends BaseAgent {
         this.crossLocation = crossLocation;
     }
     
+    
+    /**
+     * Called by the ReceiveMessagesBehaviour if another agent
+     * asked wants to change the traffic light's car count. It calls
+     * the addAdditionalCars method with the amount of cars from the message
+     * and replys the sender with a confirm.
+     */
     private class HandleTrafficLightLoadSimulationPropose extends OneShotBehaviour {
 
         private final ACLMessage msg;
@@ -141,6 +177,7 @@ public class TrafficLight extends BaseAgent {
             this.msg = msg;
         }
 
+        //Adding the amount of cars added by load simulator.
         @Override
         public void action() {
             try {
@@ -153,7 +190,6 @@ public class TrafficLight extends BaseAgent {
                 reply.setPerformative(ACLMessage.CONFIRM);
 
                 send(reply);
-//                System.out.println("TrafficLightProperties sent!");
             } catch (Codec.CodecException ex) {
                 Logger.getLogger(TrafficLight.class.getName()).log(Level.SEVERE, null, ex);
             } catch (OntologyException ex) {
@@ -162,19 +198,20 @@ public class TrafficLight extends BaseAgent {
         }
     }
 
+     /**
+     * Receives and delegates all messages that are not handled by
+     * the ContractNetResponder.
+     */
     private class ReceiveMessagesBehaviour extends CyclicBehaviour {
 
         private static final long serialVersionUID = -5018397038252984135L;
 
         @Override
         public void action() {
-
-            MessageTemplate mt
-                    = MessageTemplate.or(
-                            MessageTemplate.MatchPerformative(ACLMessage.PROPOSE), MessageTemplate.MatchPerformative(ACLMessage.REQUEST));
-
+            MessageTemplate mt = MessageTemplate.or(MessageTemplate.MatchPerformative(ACLMessage.PROPOSE), MessageTemplate.MatchPerformative(ACLMessage.REQUEST));
+                                                        
             ACLMessage msg = receive(mt);
-            if (msg == null) {
+            if (msg == null) {                                
                 block();
                 return;
             }
@@ -185,8 +222,6 @@ public class TrafficLight extends BaseAgent {
                 switch (msg.getPerformative()) {
 
                     case (ACLMessage.REQUEST):
-
-//                        System.out.println("Request from " + msg.getSender().getLocalName());
                         if (action instanceof TrafficLightLocationAndDirection) {
                             addBehaviour(new HandleTrafficLightLocationAndDirectionRequest(myAgent, msg));
                         } else if (action instanceof TrafficLightProperties) {
@@ -197,58 +232,22 @@ public class TrafficLight extends BaseAgent {
                         break;
 
                     case (ACLMessage.PROPOSE):
-                        if (action instanceof TrafficLightState) {
-                            addBehaviour(new HandleTrafficLightStatePropose(myAgent, msg));
-                        } else if (action instanceof TrafficLightLoadSimulation) {
+                        if (action instanceof TrafficLightLoadSimulation) {
                             addBehaviour(new HandleTrafficLightLoadSimulationPropose(myAgent, msg));
                         }
-                        break;
                 }
             } catch (Exception ex) {
             }
         }
     }
 
-    private class HandleTrafficLightStatePropose extends OneShotBehaviour {
-
-        private final ACLMessage msg;
-
-        public HandleTrafficLightStatePropose(Agent myAgent, ACLMessage msg) {
-            super(myAgent);
-            this.msg = msg;
-        }
-
-        @Override
-        public void action() {
-            try {
-                TrafficLightState tlp;
-
-                ContentElement content = getContentManager().extractContent(msg);
-                Concept action = ((Action) content).getAction();
-                tlp = (TrafficLightState) action;
-
-                addBehaviour(new WakerBehaviour(myAgent, tlp.getNextUpdate()) {
-
-                    @Override
-                    protected void onWake() {
-                        super.onWake();
-                        setTrafficState(tlp.getTrafficState());
-                    }
-                });
-
-                ACLMessage reply = msg.createReply();
-
-                reply.setPerformative(ACLMessage.CONFIRM);
-                send(reply);
-//                System.out.println("TrafficLightState received!");
-            } catch (Codec.CodecException ex) {
-                Logger.getLogger(TrafficLight.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (OntologyException ex) {
-                Logger.getLogger(TrafficLight.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-    }
-
+    
+    /**
+     * Called by the ReceiveMessagesBehaviour if another agent
+     * asked for the traffic light's properties. It sends 
+     * location, direction, carcount, trafficState (red/green/yellow)
+     * and crossLocation to the agent that asked.
+     */
     private class HandleTrafficLightPropertiesRequest extends OneShotBehaviour {
 
         private final ACLMessage msg;
@@ -287,6 +286,12 @@ public class TrafficLight extends BaseAgent {
         }
     }
 
+    
+     /**
+     * Called by the ReceiveMessagesBehaviour if another agent
+     * asked for the traffic light's location and direction. It sends 
+     * location, direction to the agent that asked.
+     */
     private class HandleTrafficLightLocationAndDirectionRequest extends OneShotBehaviour {
 
         private final ACLMessage msg;
@@ -326,6 +331,12 @@ public class TrafficLight extends BaseAgent {
         }
     }
 
+    
+    /**
+     * Sets the trafficState to the specified string. If it is "green" it 
+     * subtracts 10 cars from the current carCount.
+     * @param trafficState the color that the light should be (red/green/yellow)
+     */
     public void setTrafficState(String trafficState) {
         this.trafficState = trafficState;
 
