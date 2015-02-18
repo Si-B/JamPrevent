@@ -38,19 +38,13 @@ import java.util.logging.Logger;
 import messages.TrafficLightLocationAndDirection;
 import messages.TrafficLightOffer;
 
-/**
- *
- * @author SiB
- */
-public class Auctioneer extends BaseAgent {
-
-
     /**
      * Auctioneer
      * talks to TrafficLight agents and asks them for offers
      * decides on which offers to accept (set the green state) or
      * refuse based on four different, configurable algorithms
      */
+public class Auctioneer extends BaseAgent {
 
     private final List<AID> trafficLightAgents = new ArrayList<>();
     private final HashMap<AID, HashMap<String, String>> trafficLightsMetadata = new HashMap<>();
@@ -58,6 +52,9 @@ public class Auctioneer extends BaseAgent {
     private int requestIndex = 0;
     private String crossLocation = "";
 
+    /**
+     *
+     */
     @Override
     public void setup() {
         super.setup();
@@ -71,6 +68,7 @@ public class Auctioneer extends BaseAgent {
         addBehaviour(new ReceiveMessagesBehaviour());
     }
 
+    //Prepare and send a call for proposal to all known traffic lights on every tick.
     private class RequestTrafficLightOfferBehaviour extends TickerBehaviour {
 
         private Random rand = new Random();
@@ -89,6 +87,7 @@ public class Auctioneer extends BaseAgent {
             message.setLanguage(codec.getName());
             message.setOntology(ontology.getName());
             tlo.setIndex(requestIndex);
+            
             for (AID trafficLight : trafficLightAgents) {
                 try {
                     getContentManager().fillContent(message, new Action(trafficLight, tlo));
@@ -99,9 +98,11 @@ public class Auctioneer extends BaseAgent {
                     Logger.getLogger(Auctioneer.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
+            
             message.setProtocol(FIPANames.InteractionProtocol.FIPA_CONTRACT_NET);
             message.setReplyByDate(new Date(System.currentTimeMillis() + 10000));
 
+            //Using a ContractNetInitiator to initiate the CFP-Protocol.
             addBehaviour(new ContractNetInitiator(this.myAgent, message) {
 
                 @Override
@@ -138,7 +139,8 @@ public class Auctioneer extends BaseAgent {
                                     int proposal = tlo.getCarCount();
 
                                     trafficLightsMetadata.get(msg.getSender()).put("carCount", String.valueOf(proposal));
-
+                                    //The TrafficLight with the most cars will win the one round action.
+                                    //Note that this TrafficLight is still processed in the auction pattern defined by the crossLocation.
                                     if (proposal > mostCars) {
                                         mostCars = proposal;
                                         bestProposer = msg.getSender();
@@ -152,6 +154,7 @@ public class Auctioneer extends BaseAgent {
                             }
                         }
 
+                        //Depending on crossLocation we use a different aution pattern.
                         if (crossLocation.equalsIgnoreCase("Random")) {
                             setRandom(acceptances);
                         } else if (crossLocation.equalsIgnoreCase("SingleHeighest")) {
@@ -162,7 +165,7 @@ public class Auctioneer extends BaseAgent {
                             setHighestWithPredefinedStates(bestProposer, acceptances);
                         }
 
-                        // Accept the proposal of the best proposer
+                        // This is the best proposal using the carCount
                         if (accept != null) {
                             System.out.println("Accepting proposal " + mostCars + " from responder " + bestProposer.getName());
                         }
@@ -176,7 +179,8 @@ public class Auctioneer extends BaseAgent {
 
             });
         }
-
+        
+        //Pick a random car instead of the one with the most cars. Then find the best matching predefined pattern for setting the TrafficLight states.
         public void setRandomWithPredefinedStates(Vector acceptances) {
 
             int totalLights = trafficLightAgents.size();
@@ -335,6 +339,7 @@ public class Auctioneer extends BaseAgent {
 
         }
 
+        //Take the trafficLightWithHighestCarCount. Then find the best matching predefined pattern for setting the TrafficLight states.
         public void setHighestWithPredefinedStates(AID trafficLightWithHighestCarCount, Vector acceptances) {
 
             List<AID> trafficLightsThatShouldBeGreen = new ArrayList<AID>();
@@ -487,6 +492,7 @@ public class Auctioneer extends BaseAgent {
             }
         }
 
+        //Accept only the proposal of the TrafficLight with the most carCount.
         public void setSingleHighest(AID trafficLightWithHighestCarCount, Vector acceptances) {
             Enumeration e = acceptances.elements();
             while (e.hasMoreElements()) {
@@ -503,6 +509,7 @@ public class Auctioneer extends BaseAgent {
             }
         }
 
+        //Pick a random TrafficLight and accept proposal.
         public void setRandom(Vector acceptances) {
             int totalLights = trafficLightAgents.size();
             int randomNum = rand.nextInt(totalLights);
@@ -524,6 +531,7 @@ public class Auctioneer extends BaseAgent {
 
     }
 
+    //Handle receiving of messages with are not part of the contract net.
     private class ReceiveMessagesBehaviour extends CyclicBehaviour {
 
         private static final long serialVersionUID = -5018397038252984135L;
@@ -545,8 +553,6 @@ public class Auctioneer extends BaseAgent {
                 switch (msg.getPerformative()) {
 
                     case (ACLMessage.PROPAGATE):
-
-//                        System.out.println("Request from " + msg.getSender().getLocalName());
                         if (action instanceof TrafficLightLocationAndDirection) {
                             addBehaviour(new HandleTrafficLightLocationAndDirectionInform(myAgent, msg));
                         }
@@ -557,15 +563,24 @@ public class Auctioneer extends BaseAgent {
         }
     }
 
+    //Creating meta data of all answering and know TrafficLights.
     public class HandleTrafficLightLocationAndDirectionInform extends OneShotBehaviour {
 
         private final ACLMessage msg;
 
+        /**
+         *
+         * @param myAgent
+         * @param msg
+         */
         public HandleTrafficLightLocationAndDirectionInform(Agent myAgent, ACLMessage msg) {
             super(myAgent);
             this.msg = msg;
         }
 
+        /**
+         *
+         */
         @Override
         public void action() {
 
@@ -579,7 +594,6 @@ public class Auctioneer extends BaseAgent {
                 if (trafficLightsMetadata.containsKey(msg.getSender()) && crossLocation.equalsIgnoreCase(tllad.getCrossLocation())) {
                     trafficLightsMetadata.get(msg.getSender()).put("location", tllad.getLocation());
                     trafficLightsMetadata.get(msg.getSender()).put("direction", tllad.getDirection());
-//                    trafficLightsMetadata.get(msg.getSender()).put("crossLocation", tllad.getCrossLocation());
                     System.out.println(tllad.getLocation() + " " + tllad.getDirection());
                     trafficLightsByDirection.put(tllad.getLocation() + tllad.getDirection(), msg.getSender());
                 } else {
@@ -590,7 +604,6 @@ public class Auctioneer extends BaseAgent {
                 ACLMessage reply = msg.createReply();
                 reply.setPerformative(ACLMessage.CONFIRM);
                 send(reply);
-//                System.out.println("TrafficLightLocationAndDirection received!");
             } catch (Codec.CodecException ex) {
                 Logger.getLogger(Auctioneer.class.getName()).log(Level.SEVERE, null, ex);
             } catch (OntologyException ex) {
@@ -600,8 +613,15 @@ public class Auctioneer extends BaseAgent {
         }
     }
 
+    /**
+     *Default execution which finds all TrafficLights then waits so all TrafficLights can be found
+     * and then starts requesting by using the call for proposal protocol.
+     */
     public class DefaultExecutionBehaviour extends SequentialBehaviour {
 
+        /**
+         *
+         */
         public DefaultExecutionBehaviour() {
             addSubBehaviour(new FindExistingTrafficLightsBehaviour(this.myAgent, 3000));
             addSubBehaviour(new WakerBehaviour(myAgent, 3000) {
@@ -614,6 +634,7 @@ public class Auctioneer extends BaseAgent {
             });
         }
 
+        //Using the so known yellow pages to find all TrafficLights.
         private class FindExistingTrafficLightsBehaviour extends WakerBehaviour {
 
             public FindExistingTrafficLightsBehaviour(Agent a, long timeout) {

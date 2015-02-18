@@ -12,20 +12,16 @@ import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.SequentialBehaviour;
 import jade.core.behaviours.TickerBehaviour;
-import java.util.HashMap;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import messages.TrafficLightLoadSimulation;
 
 /**
- *
+ *Simulates arriving cars at all known TrafficLights. Uses a random number from 0 to 10.
  * @author knut
  */
 public class LoadSimulatorAgent extends FindTrafficLightsAgent {
-
-//    private final List<AID> trafficLightAgents = new ArrayList<>();
-    private final HashMap<AID, HashMap<String, String>> trafficLightsMetadata = new HashMap<>();
 
     @Override
     public void setup() {
@@ -36,12 +32,12 @@ public class LoadSimulatorAgent extends FindTrafficLightsAgent {
     public class DefaultExecutionBehaviour extends SequentialBehaviour {
 
         public DefaultExecutionBehaviour() {
-            addSubBehaviour(new SetStateBehaviour(this.myAgent, 1000));
+            addSubBehaviour(new SimulateLoadBehaviour(this.myAgent, 1000));
         }
 
-        private class SetStateBehaviour extends TickerBehaviour {
+        private class SimulateLoadBehaviour extends TickerBehaviour {
 
-            public SetStateBehaviour(Agent a, long period) {
+            public SimulateLoadBehaviour(Agent a, long period) {
                 super(a, period);
             }
 

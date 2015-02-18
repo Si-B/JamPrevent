@@ -62,6 +62,8 @@ public class TrafficLight extends BaseAgent {
             crossLocation = arguments[2].toString();
         }
         
+        
+        //For emergencies set traffic state to yellow when there was no call for proposal for one second.
         addBehaviour(new TickerBehaviour(this, 1000) {
             
             @Override
@@ -71,12 +73,17 @@ public class TrafficLight extends BaseAgent {
                 }
             }
         });
+
+        //Prepare to get all call for proposals by using the required message template.
         
         MessageTemplate template = MessageTemplate.and(
                 MessageTemplate.MatchProtocol(FIPANames.InteractionProtocol.FIPA_CONTRACT_NET),
                 MessageTemplate.MatchPerformative(ACLMessage.CFP));
-
+                
+        
         addBehaviour(new ContractNetResponder(this, template) {
+            
+            //Handling call for proposals and preparing answers.
             @Override
             protected ACLMessage prepareResponse(ACLMessage cfp) throws NotUnderstoodException, RefuseException {
                 try {
@@ -103,6 +110,7 @@ public class TrafficLight extends BaseAgent {
                 return null;
             }            
             
+            //Notifying about accepted proposals and executed actions.
             @Override
             protected ACLMessage prepareResultNotification(ACLMessage cfp, ACLMessage propose, ACLMessage accept) throws FailureException {
                 System.out.println("Agent " + getLocalName() + ": Proposal accepted");
@@ -112,7 +120,8 @@ public class TrafficLight extends BaseAgent {
                 inform.setPerformative(ACLMessage.INFORM);
                 return inform;
             }                                
-                                    
+            
+            //If proposal was rejected set the traffic state to red.
             @Override
             protected void handleRejectProposal(ACLMessage cfp, ACLMessage propose, ACLMessage reject) {
                 System.out.println("Agent " + getLocalName() + ": Proposal rejected");
@@ -120,6 +129,7 @@ public class TrafficLight extends BaseAgent {
                 lastCallForProposalReplyTime = new Date();
             }
 
+            //If proposal was accepted set the traffic state to green.
             @Override
             protected ACLMessage handleAcceptProposal(ACLMessage cfp, ACLMessage propose, ACLMessage accept) throws FailureException {
                 setTrafficState("green");
@@ -167,6 +177,7 @@ public class TrafficLight extends BaseAgent {
             this.msg = msg;
         }
 
+        //Adding the amount of cars added by load simulator.
         @Override
         public void action() {
             try {

@@ -5,9 +5,6 @@
  */
 package agents;
 
-import jade.core.AID;
-import jade.domain.JADEAgentManagement.CreateAgent;
-import static jade.tools.sniffer.Message.r;
 import jade.wrapper.AgentController;
 import jade.wrapper.ContainerController;
 import jade.wrapper.StaleProxyException;
